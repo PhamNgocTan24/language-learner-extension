@@ -1,0 +1,31 @@
+@import "tailwindcss";
+@source "../components/**/*.{ts,tsx}";
+@source "../app/**/*.{ts,tsx}";
+
+@theme {
+  --color-brand-primary: #185FA5;
+  --color-brand-primary-hover: #0C447C;
+  --color-brand-primary-light: #E6F1FB;
+
+  --color-accent: #EF9F27;
+  --color-accent-hover: #BA7517;
+  --color-accent-light: #FAEEDA;
+
+  --color-success: #1D9E75;
+  --color-success-light: #E1F5EE;
+
+  --color-error: #E24B4A;
+  --color-error-light: #FCEBEB;
+
+  --font-family-sans: "Inter", system-ui, sans-serif;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #111827;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}

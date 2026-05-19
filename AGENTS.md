@@ -98,6 +98,8 @@ New provider checklist:
 
 `LlmService` handles retry (3 attempts) and JSON validation — do not add retry logic elsewhere.
 
+**`LlmModule` uses `useFactory` to instantiate the provider — not `useClass`.** This is required because `process.env.LLM_PROVIDER` is `undefined` at module parse time (before `ConfigModule` runs). `useFactory` runs after env is loaded.
+
 ---
 
 ## Domain Services — Where Business Rules Live
@@ -195,3 +197,4 @@ STRIPE_WEBHOOK_SECRET
 - Do not return raw TypeORM entities from controllers — use DTOs
 - Do not add a new LLM provider without implementing `ILLMProvider` fully
 - Do not store LLM raw responses — always parse and validate JSON before persisting
+- Do not use `useClass` to register `LLM_PROVIDER` in `LlmModule` — use `useFactory` so env vars are available at instantiation time

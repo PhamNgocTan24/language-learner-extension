@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LearnClip</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="popup">
+  <!-- Logged out state -->
+  <div id="view-logout" class="view">
+    <div class="popup-header">
+      <span class="logo">📌 LearnClip</span>
+    </div>
+    <p class="popup-subtitle">Save English highlights and quiz yourself later.</p>
+    <a id="btn-login" class="btn btn--primary" href="#" target="_blank">
+      Sign in with Google
+    </a>
+  </div>
+
+  <!-- Logged in state -->
+  <div id="view-login" class="view hidden">
+    <div class="popup-header">
+      <span class="logo">📌 LearnClip</span>
+      <button id="btn-logout" class="btn-link">Logout</button>
+    </div>
+    <div class="user-info">
+      <span id="user-email" class="user-email">—</span>
+      <span id="user-level" class="badge">B1</span>
+    </div>
+    <div class="stats-row">
+      <div class="stat">
+        <span id="stat-saves" class="stat-value">—</span>
+        <span class="stat-label">Saves left</span>
+      </div>
+      <div class="stat">
+        <span id="stat-accuracy" class="stat-value">—</span>
+        <span class="stat-label">Accuracy</span>
+      </div>
+    </div>
+    <a id="btn-dashboard" class="btn btn--secondary" href="#" target="_blank">
+      Open Dashboard →
+    </a>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
