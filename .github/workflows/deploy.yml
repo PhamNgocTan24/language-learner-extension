@@ -76,8 +76,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'pnpm'
-          cache-dependency-path: web/pnpm-lock.yaml
+          # no cache here — pnpm store path fails on monorepo root
+
+      - name: Get pnpm store path
+        id: pnpm-cache
+        run: echo "dir=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.dir }}
+          key: pnpm-web-${{ runner.os }}-${{ hashFiles('web/pnpm-lock.yaml') }}
+          restore-keys: pnpm-web-${{ runner.os }}-
 
       - name: Install deps
         run: pnpm install --frozen-lockfile
@@ -180,8 +189,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'pnpm'
-          cache-dependency-path: web/pnpm-lock.yaml
+          # no cache here — pnpm store path fails on monorepo root
+
+      - name: Get pnpm store path
+        id: pnpm-cache
+        run: echo "dir=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.dir }}
+          key: pnpm-web-${{ runner.os }}-${{ hashFiles('web/pnpm-lock.yaml') }}
+          restore-keys: pnpm-web-${{ runner.os }}-
 
       - name: Install deps
         run: pnpm install --frozen-lockfile
