@@ -118,9 +118,9 @@ jobs:
         run: |
           rm -rf lambda-package
           mkdir -p lambda-package
-          cp -R dist package.json pnpm-lock.yaml lambda-package/
+          cp -R dist package.json lambda-package/
           cd lambda-package
-          CI=true pnpm install --prod --frozen-lockfile --ignore-scripts --ignore-workspace
+          npm install --omit=dev --ignore-scripts --no-audit --no-fund --package-lock=false
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
