@@ -22,12 +22,14 @@ jobs:
           filters: |
             web:
               - 'web/**'
+              - '.github/workflows/deploy.yml'
             backend:
               - 'src/**'
               - 'template.yaml'
               - 'package.json'
               - 'tsconfig*.json'
               - 'nest-cli.json'
+              - '.github/workflows/deploy.yml'
 
   # ── 2. Lint & Test — backend (only if backend files changed) ────────────────
   ci-backend:
@@ -193,6 +195,47 @@ jobs:
             exit 1
           fi
 
+          missing_required=()
+          for required_name in DATABASE_URL REDIS_URL JWT_SECRET JWT_REFRESH_SECRET; do
+            if [[ -z "${!required_name}" ]]; then
+              missing_required+=("$required_name")
+            fi
+          done
+
+          if (( ${#missing_required[@]} > 0 )); then
+            echo "::error::Missing required SAM parameter secrets: ${missing_required[*]}"
+            exit 1
+          fi
+
+          parameter_overrides=(
+            "DatabaseUrl=$DATABASE_URL"
+            "RedisUrl=$REDIS_URL"
+            "JwtSecret=$JWT_SECRET"
+            "JwtRefreshSecret=$JWT_REFRESH_SECRET"
+          )
+
+          add_parameter_if_set() {
+            local name="$1"
+            local value="$2"
+
+            if [[ -n "$value" ]]; then
+              parameter_overrides+=("$name=$value")
+            fi
+          }
+
+          add_parameter_if_set "GoogleClientId" "$GOOGLE_CLIENT_ID"
+          add_parameter_if_set "GoogleClientSecret" "$GOOGLE_CLIENT_SECRET"
+          add_parameter_if_set "GoogleCallbackUrl" "$GOOGLE_CALLBACK_URL"
+          add_parameter_if_set "LlmProvider" "$LLM_PROVIDER"
+          add_parameter_if_set "LlmModel" "$LLM_MODEL"
+          add_parameter_if_set "GroqApiKey" "$GROQ_API_KEY"
+          add_parameter_if_set "AnthropicApiKey" "$ANTHROPIC_API_KEY"
+          add_parameter_if_set "StripeSecretKey" "$STRIPE_SECRET_KEY"
+          add_parameter_if_set "StripeWebhookSecret" "$STRIPE_WEBHOOK_SECRET"
+          add_parameter_if_set "StripeProPriceId" "$STRIPE_PRO_PRICE_ID"
+          add_parameter_if_set "StripeLifetimePriceId" "$STRIPE_LIFETIME_PRICE_ID"
+          add_parameter_if_set "FrontendUrl" "$FRONTEND_URL"
+
           sam deploy \
             --stack-name learnclip-api \
             --s3-bucket "$sam_bucket" \
@@ -200,23 +243,7 @@ jobs:
             --capabilities CAPABILITY_IAM \
             --no-confirm-changeset \
             --no-fail-on-empty-changeset \
-            --parameter-overrides \
-              "DatabaseUrl=$DATABASE_URL" \
-              "RedisUrl=$REDIS_URL" \
-              "JwtSecret=$JWT_SECRET" \
-              "JwtRefreshSecret=$JWT_REFRESH_SECRET" \
-              "GoogleClientId=$GOOGLE_CLIENT_ID" \
-              "GoogleClientSecret=$GOOGLE_CLIENT_SECRET" \
-              "GoogleCallbackUrl=$GOOGLE_CALLBACK_URL" \
-              "LlmProvider=$LLM_PROVIDER" \
-              "LlmModel=$LLM_MODEL" \
-              "GroqApiKey=$GROQ_API_KEY" \
-              "AnthropicApiKey=$ANTHROPIC_API_KEY" \
-              "StripeSecretKey=$STRIPE_SECRET_KEY" \
-              "StripeWebhookSecret=$STRIPE_WEBHOOK_SECRET" \
-              "StripeProPriceId=$STRIPE_PRO_PRICE_ID" \
-              "StripeLifetimePriceId=$STRIPE_LIFETIME_PRICE_ID" \
-              "FrontendUrl=$FRONTEND_URL"
+            --parameter-overrides "${parameter_overrides[@]}"
 
   # ── 5. Deploy Web → Vercel (only if web files changed) ──────────────────────
   deploy-web:
@@ -250,8 +277,5 @@ jobs:
       - name: Pull Vercel environment
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
-      - name: Build for Vercel
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-
       - name: Deploy to Vercel
-        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
