@@ -95,7 +95,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: learnclip-api
-      Handler: dist/lambda.handler
+      Handler: lambda.handler
       CodeUri: .
       Description: LearnClip NestJS API
       Environment:
