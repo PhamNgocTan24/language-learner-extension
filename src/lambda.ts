@@ -21,7 +21,9 @@ async function bootstrap(): Promise<Handler> {
   await app.init();
 
   const expressApp = app.getHttpAdapter().getInstance();
-  return serverlessHttp(expressApp);
+  return serverlessHttp(expressApp, {
+    basePath: process.env.API_BASE_PATH || '/prod',
+  });
 }
 
 export const handler = async (event: any, context: Context, callback: any) => {
