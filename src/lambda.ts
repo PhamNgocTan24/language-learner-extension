@@ -1,7 +1,7 @@
 import { Handler, Context } from 'aws-lambda';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import serverlessHttp from 'serverless-http';
+import serverlessHttp = require('serverless-http');
 
 // Reuse the handler across warm invocations — do NOT re-bootstrap on every call
 let server: Handler;
