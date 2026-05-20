@@ -114,9 +114,13 @@ jobs:
       - name: Build NestJS
         run: pnpm run build
 
-      # Install only production deps so the Lambda package stays lean
-      - name: Install production deps for Lambda package
-        run: pnpm install --prod --frozen-lockfile --ignore-scripts
+      - name: Prepare Lambda package
+        run: |
+          rm -rf lambda-package
+          mkdir -p lambda-package
+          cp -R dist package.json pnpm-lock.yaml lambda-package/
+          cd lambda-package
+          CI=true pnpm install --prod --frozen-lockfile --ignore-scripts --ignore-workspace
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -129,9 +133,6 @@ jobs:
         uses: aws-actions/setup-sam@v2
         with:
           use-installer: true
-
-      - name: SAM Build
-        run: sam build --use-container
 
       - name: SAM Deploy
         env:
