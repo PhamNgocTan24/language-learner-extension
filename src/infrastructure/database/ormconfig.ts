@@ -8,8 +8,8 @@ export const typeOrmConfig = (): TypeOrmModuleOptions => ({
   url: process.env.DATABASE_URL,
   entities: [UserOrmEntity, SaveOrmEntity, QuizOrmEntity],
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
-  // Never use synchronize: true in production
-  synchronize: process.env.NODE_ENV === 'development',
+  // Keep remote databases migration-driven by default.
+  synchronize: process.env.TYPEORM_SYNCHRONIZE === 'true',
   logging: process.env.NODE_ENV === 'development',
-  ssl: process.env.NODE_ENV !== 'development' ? { rejectUnauthorized: false } : false,
+  ssl: process.env.DATABASE_SSL === 'false' ? false : { rejectUnauthorized: false },
 });
