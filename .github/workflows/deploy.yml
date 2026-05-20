@@ -1,0 +1,197 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - develop   # triggers on merge to develop
+
+jobs:
+  # ── 1. Detect changed paths (always runs) ───────────────────────────────────
+  changes:
+    name: Detect changed paths
+    runs-on: ubuntu-latest
+    outputs:
+      web: ${{ steps.filter.outputs.web }}
+      backend: ${{ steps.filter.outputs.backend }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            web:
+              - 'web/**'
+            backend:
+              - 'src/**'
+              - 'template.yaml'
+              - 'package.json'
+              - 'tsconfig*.json'
+              - 'nest-cli.json'
+
+  # ── 2. Lint & Test — backend (only if backend files changed) ────────────────
+  ci-backend:
+    name: Lint & Test (Backend)
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Test
+        run: pnpm run test -- --passWithNoTests
+
+  # ── 3. Lint & Type-check — web (only if web files changed) ──────────────────
+  ci-web:
+    name: Lint & Type-check (Web)
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Type check
+        run: pnpm run type-check
+
+  # ── 4. Deploy Backend → AWS Lambda via SAM ──────────────────────────────────
+  deploy-backend:
+    name: Deploy Backend (Lambda)
+    needs: [changes, ci-backend]
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Build NestJS
+        run: pnpm run build
+
+      # Install only production deps so the Lambda package stays lean
+      - name: Install production deps for Lambda package
+        run: pnpm install --prod --frozen-lockfile --ignore-scripts
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup AWS SAM CLI
+        uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: SAM Build
+        run: sam build --use-container
+
+      - name: SAM Deploy
+        run: |
+          sam deploy \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --stack-name learnclip-api \
+            --s3-bucket ${{ secrets.AWS_SAM_BUCKET }} \
+            --capabilities CAPABILITY_IAM \
+            --region ${{ secrets.AWS_REGION }} \
+            --parameter-overrides \
+              DatabaseUrl="${{ secrets.DATABASE_URL }}" \
+              RedisUrl="${{ secrets.REDIS_URL }}" \
+              JwtSecret="${{ secrets.JWT_SECRET }}" \
+              JwtRefreshSecret="${{ secrets.JWT_REFRESH_SECRET }}" \
+              GoogleClientId="${{ secrets.GOOGLE_CLIENT_ID }}" \
+              GoogleClientSecret="${{ secrets.GOOGLE_CLIENT_SECRET }}" \
+              GoogleCallbackUrl="${{ secrets.GOOGLE_CALLBACK_URL }}" \
+              LlmProvider="${{ secrets.LLM_PROVIDER }}" \
+              LlmModel="${{ secrets.LLM_MODEL }}" \
+              GroqApiKey="${{ secrets.GROQ_API_KEY }}" \
+              AnthropicApiKey="${{ secrets.ANTHROPIC_API_KEY }}" \
+              StripeSecretKey="${{ secrets.STRIPE_SECRET_KEY }}" \
+              StripeWebhookSecret="${{ secrets.STRIPE_WEBHOOK_SECRET }}" \
+              StripeProPriceId="${{ secrets.STRIPE_PRO_PRICE_ID }}" \
+              StripeLifetimePriceId="${{ secrets.STRIPE_LIFETIME_PRICE_ID }}" \
+              FrontendUrl="${{ secrets.FRONTEND_URL }}"
+
+  # ── 5. Deploy Web → Vercel (only if web files changed) ──────────────────────
+  deploy-web:
+    name: Deploy Web (Vercel)
+    needs: [changes, ci-web]
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Vercel CLI
+        run: pnpm add -g vercel@latest
+
+      - name: Pull Vercel environment
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build for Vercel
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy to Vercel
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}

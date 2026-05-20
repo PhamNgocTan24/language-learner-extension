@@ -1,0 +1,140 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: LearnClip NestJS API — Lambda + API Gateway + EventBridge warm-up
+
+Globals:
+  Function:
+    Timeout: 30          # seconds — NestJS cold start needs headroom
+    MemorySize: 512      # MB — increase to 1024 if cold starts are still slow
+    Runtime: nodejs20.x
+    Environment:
+      Variables:
+        NODE_ENV: production
+
+Parameters:
+  # Pass these from GitHub Actions secrets via --parameter-overrides
+  DatabaseUrl:
+    Type: String
+    NoEcho: true
+  RedisUrl:
+    Type: String
+    NoEcho: true
+  JwtSecret:
+    Type: String
+    NoEcho: true
+  JwtRefreshSecret:
+    Type: String
+    NoEcho: true
+  GoogleClientId:
+    Type: String
+    NoEcho: true
+  GoogleClientSecret:
+    Type: String
+    NoEcho: true
+  GoogleCallbackUrl:
+    Type: String
+  LlmProvider:
+    Type: String
+    Default: claude
+  LlmModel:
+    Type: String
+  GroqApiKey:
+    Type: String
+    NoEcho: true
+    Default: ''
+  AnthropicApiKey:
+    Type: String
+    NoEcho: true
+    Default: ''
+  StripeSecretKey:
+    Type: String
+    NoEcho: true
+  StripeWebhookSecret:
+    Type: String
+    NoEcho: true
+  StripeProPriceId:
+    Type: String
+  StripeLifetimePriceId:
+    Type: String
+  FrontendUrl:
+    Type: String
+
+Resources:
+
+  # ── API Gateway ─────────────────────────────────────────────────────────────
+  LearnClipApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: prod
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref FrontendUrl
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+        AllowMethods:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+          - OPTIONS
+        AllowCredentials: true
+
+  # ── Lambda Function ──────────────────────────────────────────────────────────
+  LearnClipFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: learnclip-api
+      Handler: dist/lambda.handler
+      CodeUri: .
+      Description: LearnClip NestJS API
+      Environment:
+        Variables:
+          DATABASE_URL: !Ref DatabaseUrl
+          REDIS_URL: !Ref RedisUrl
+          JWT_SECRET: !Ref JwtSecret
+          JWT_REFRESH_SECRET: !Ref JwtRefreshSecret
+          JWT_EXPIRES_IN: 15m
+          JWT_REFRESH_EXPIRES_IN: 7d
+          GOOGLE_CLIENT_ID: !Ref GoogleClientId
+          GOOGLE_CLIENT_SECRET: !Ref GoogleClientSecret
+          GOOGLE_CALLBACK_URL: !Ref GoogleCallbackUrl
+          LLM_PROVIDER: !Ref LlmProvider
+          LLM_MODEL: !Ref LlmModel
+          GROQ_API_KEY: !Ref GroqApiKey
+          ANTHROPIC_API_KEY: !Ref AnthropicApiKey
+          STRIPE_SECRET_KEY: !Ref StripeSecretKey
+          STRIPE_WEBHOOK_SECRET: !Ref StripeWebhookSecret
+          STRIPE_PRO_PRICE_ID: !Ref StripeProPriceId
+          STRIPE_LIFETIME_PRICE_ID: !Ref StripeLifetimePriceId
+          FRONTEND_URL: !Ref FrontendUrl
+      Events:
+        # Catch-all proxy — forwards every route to NestJS
+        ApiProxy:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref LearnClipApi
+            Path: /{proxy+}
+            Method: ANY
+        ApiRoot:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref LearnClipApi
+            Path: /
+            Method: ANY
+        # ── EventBridge warm-up rule — pings every 5 minutes ─────────────────
+        WarmUpSchedule:
+          Type: Schedule
+          Properties:
+            Schedule: rate(5 minutes)
+            Description: Keep Lambda warm — zero cold starts
+            Enabled: true
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${LearnClipApi}.execute-api.${AWS::Region}.amazonaws.com/prod'
+  FunctionArn:
+    Description: Lambda function ARN
+    Value: !GetAtt LearnClipFunction.Arn
