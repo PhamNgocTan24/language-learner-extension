@@ -2,6 +2,7 @@
 
 interface AnswerOptionProps {
   option: string;
+  letter: string;
   selected: boolean;
   submitted: boolean;
   isCorrect: boolean;

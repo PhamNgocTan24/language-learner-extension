@@ -54,7 +54,7 @@ jobs:
         run: pnpm run lint
 
       - name: Test
-        run: pnpm run test -- --passWithNoTests
+        run: pnpm run test
 
   # ── 3. Lint & Type-check — web (only if web files changed) ──────────────────
   ci-web:
