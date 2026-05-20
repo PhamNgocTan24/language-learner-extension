@@ -68,22 +68,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Install pnpm
-        run: npm install -g pnpm@9
-
-      - name: Get pnpm store path
-        id: pnpm-cache
-        run: echo "dir=$(pnpm store path)" >> $GITHUB_OUTPUT
-
-      - uses: actions/cache@v4
-        with:
-          path: ${{ steps.pnpm-cache.outputs.dir }}
-          key: pnpm-web-${{ runner.os }}-${{ hashFiles('web/pnpm-lock.yaml') }}
-          restore-keys: pnpm-web-${{ runner.os }}-
+          cache: 'pnpm'
+          cache-dependency-path: web/pnpm-lock.yaml
 
       - name: Install deps
         run: pnpm install --frozen-lockfile
@@ -178,22 +171,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Install pnpm
-        run: npm install -g pnpm@9
-
-      - name: Get pnpm store path
-        id: pnpm-cache
-        run: echo "dir=$(pnpm store path)" >> $GITHUB_OUTPUT
-
-      - uses: actions/cache@v4
-        with:
-          path: ${{ steps.pnpm-cache.outputs.dir }}
-          key: pnpm-web-${{ runner.os }}-${{ hashFiles('web/pnpm-lock.yaml') }}
-          restore-keys: pnpm-web-${{ runner.os }}-
+          cache: 'pnpm'
+          cache-dependency-path: web/pnpm-lock.yaml
 
       - name: Install deps
         run: pnpm install --frozen-lockfile
