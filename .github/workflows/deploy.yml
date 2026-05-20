@@ -157,8 +157,13 @@ jobs:
           sam_bucket="${AWS_SAM_BUCKET#s3://}"
           sam_bucket="${sam_bucket%/}"
 
+          if [[ "$sam_bucket" =~ ^arn:aws[a-zA-Z-]*:s3:::(.+)$ ]]; then
+            sam_bucket="${BASH_REMATCH[1]}"
+            sam_bucket="${sam_bucket%/}"
+          fi
+
           if [[ -z "$sam_bucket" ]]; then
-            echo "::error::AWS_SAM_BUCKET is required and must be an S3 bucket name, for example learnclip-sam-artifacts."
+            echo "::error::AWS_SAM_BUCKET is required and must be an S3 bucket name or bucket ARN, for example learnclip-sam-artifacts or arn:aws:s3:::learnclip-sam-artifacts."
             exit 1
           fi
 
@@ -168,7 +173,7 @@ jobs:
               exit 1
               ;;
             */*)
-              echo "::error::AWS_SAM_BUCKET must be a bucket name only, not an s3:// URL with a path."
+              echo "::error::AWS_SAM_BUCKET must identify a bucket only, not a bucket path."
               exit 1
               ;;
           esac
