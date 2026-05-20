@@ -207,6 +207,24 @@ jobs:
             exit 1
           fi
 
+          stack_status="$(
+            aws cloudformation describe-stacks \
+              --stack-name learnclip-api \
+              --region "$AWS_DEPLOY_REGION" \
+              --query 'Stacks[0].StackStatus' \
+              --output text 2>/dev/null || true
+          )"
+
+          if [[ "$stack_status" == "ROLLBACK_COMPLETE" ]]; then
+            echo "CloudFormation stack learnclip-api is in ROLLBACK_COMPLETE. Deleting it before first successful deploy."
+            aws cloudformation delete-stack \
+              --stack-name learnclip-api \
+              --region "$AWS_DEPLOY_REGION"
+            aws cloudformation wait stack-delete-complete \
+              --stack-name learnclip-api \
+              --region "$AWS_DEPLOY_REGION"
+          fi
+
           parameter_overrides=(
             "DatabaseUrl=$DATABASE_URL"
             "RedisUrl=$REDIS_URL"
