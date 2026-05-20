@@ -149,31 +149,23 @@ jobs:
           STRIPE_PRO_PRICE_ID: ${{ secrets.STRIPE_PRO_PRICE_ID }}
           STRIPE_LIFETIME_PRICE_ID: ${{ secrets.STRIPE_LIFETIME_PRICE_ID }}
           FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+          AWS_SAM_BUCKET: ${{ secrets.AWS_SAM_BUCKET }}
+          AWS_DEPLOY_REGION: ${{ secrets.AWS_REGION }}
         run: |
-          sam deploy \
-            --no-confirm-changeset \
-            --no-fail-on-empty-changeset \
-            --stack-name learnclip-api \
-            --s3-bucket ${{ secrets.AWS_SAM_BUCKET }} \
-            --capabilities CAPABILITY_IAM \
-            --region ${{ secrets.AWS_REGION }} \
-            --parameter-overrides \
-              "DatabaseUrl=${DATABASE_URL}" \
-              "RedisUrl=${REDIS_URL}" \
-              "JwtSecret=${JWT_SECRET}" \
-              "JwtRefreshSecret=${JWT_REFRESH_SECRET}" \
-              "GoogleClientId=${GOOGLE_CLIENT_ID}" \
-              "GoogleClientSecret=${GOOGLE_CLIENT_SECRET}" \
-              "GoogleCallbackUrl=${GOOGLE_CALLBACK_URL}" \
-              "LlmProvider=${LLM_PROVIDER}" \
-              "LlmModel=${LLM_MODEL}" \
-              "GroqApiKey=${GROQ_API_KEY}" \
-              "AnthropicApiKey=${ANTHROPIC_API_KEY}" \
-              "StripeSecretKey=${STRIPE_SECRET_KEY}" \
-              "StripeWebhookSecret=${STRIPE_WEBHOOK_SECRET}" \
-              "StripeProPriceId=${STRIPE_PRO_PRICE_ID}" \
-              "StripeLifetimePriceId=${STRIPE_LIFETIME_PRICE_ID}" \
-              "FrontendUrl=${FRONTEND_URL}"
+          # Write samconfig.toml with all params — handles empty values safely
+          cat > samconfig.toml <<SAMEOF
+          version = 0.1
+          [default.deploy.parameters]
+          stack_name = "learnclip-api"
+          s3_bucket = "${AWS_SAM_BUCKET}"
+          region = "${AWS_DEPLOY_REGION}"
+          capabilities = "CAPABILITY_IAM"
+          confirm_changeset = false
+          fail_on_empty_changeset = false
+          parameter_overrides = "DatabaseUrl=\"${DATABASE_URL}\" RedisUrl=\"${REDIS_URL}\" JwtSecret=\"${JWT_SECRET}\" JwtRefreshSecret=\"${JWT_REFRESH_SECRET}\" GoogleClientId=\"${GOOGLE_CLIENT_ID}\" GoogleClientSecret=\"${GOOGLE_CLIENT_SECRET}\" GoogleCallbackUrl=\"${GOOGLE_CALLBACK_URL}\" LlmProvider=\"${LLM_PROVIDER}\" LlmModel=\"${LLM_MODEL}\" GroqApiKey=\"${GROQ_API_KEY}\" AnthropicApiKey=\"${ANTHROPIC_API_KEY}\" StripeSecretKey=\"${STRIPE_SECRET_KEY}\" StripeWebhookSecret=\"${STRIPE_WEBHOOK_SECRET}\" StripeProPriceId=\"${STRIPE_PRO_PRICE_ID}\" StripeLifetimePriceId=\"${STRIPE_LIFETIME_PRICE_ID}\" FrontendUrl=\"${FRONTEND_URL}\""
+          SAMEOF
+
+          sam deploy
 
   # ── 5. Deploy Web → Vercel (only if web files changed) ──────────────────────
   deploy-web:

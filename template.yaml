@@ -28,16 +28,20 @@ Parameters:
   GoogleClientId:
     Type: String
     NoEcho: true
+    Default: ''
   GoogleClientSecret:
     Type: String
     NoEcho: true
+    Default: ''
   GoogleCallbackUrl:
     Type: String
+    Default: ''
   LlmProvider:
     Type: String
     Default: claude
   LlmModel:
     Type: String
+    Default: ''
   GroqApiKey:
     Type: String
     NoEcho: true
@@ -49,15 +53,20 @@ Parameters:
   StripeSecretKey:
     Type: String
     NoEcho: true
+    Default: ''
   StripeWebhookSecret:
     Type: String
     NoEcho: true
+    Default: ''
   StripeProPriceId:
     Type: String
+    Default: ''
   StripeLifetimePriceId:
     Type: String
+    Default: ''
   FrontendUrl:
     Type: String
+    Default: ''
 
 Resources:
 
