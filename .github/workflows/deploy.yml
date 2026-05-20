@@ -152,20 +152,66 @@ jobs:
           AWS_SAM_BUCKET: ${{ secrets.AWS_SAM_BUCKET }}
           AWS_DEPLOY_REGION: ${{ secrets.AWS_REGION }}
         run: |
-          # Write samconfig.toml with all params — handles empty values safely
-          cat > samconfig.toml <<SAMEOF
-          version = 0.1
-          [default.deploy.parameters]
-          stack_name = "learnclip-api"
-          s3_bucket = "${AWS_SAM_BUCKET}"
-          region = "${AWS_DEPLOY_REGION}"
-          capabilities = "CAPABILITY_IAM"
-          confirm_changeset = false
-          fail_on_empty_changeset = false
-          parameter_overrides = "DatabaseUrl=\"${DATABASE_URL}\" RedisUrl=\"${REDIS_URL}\" JwtSecret=\"${JWT_SECRET}\" JwtRefreshSecret=\"${JWT_REFRESH_SECRET}\" GoogleClientId=\"${GOOGLE_CLIENT_ID}\" GoogleClientSecret=\"${GOOGLE_CLIENT_SECRET}\" GoogleCallbackUrl=\"${GOOGLE_CALLBACK_URL}\" LlmProvider=\"${LLM_PROVIDER}\" LlmModel=\"${LLM_MODEL}\" GroqApiKey=\"${GROQ_API_KEY}\" AnthropicApiKey=\"${ANTHROPIC_API_KEY}\" StripeSecretKey=\"${STRIPE_SECRET_KEY}\" StripeWebhookSecret=\"${STRIPE_WEBHOOK_SECRET}\" StripeProPriceId=\"${STRIPE_PRO_PRICE_ID}\" StripeLifetimePriceId=\"${STRIPE_LIFETIME_PRICE_ID}\" FrontendUrl=\"${FRONTEND_URL}\""
-          SAMEOF
+          set -euo pipefail
 
-          sam deploy
+          sam_bucket="${AWS_SAM_BUCKET#s3://}"
+          sam_bucket="${sam_bucket%/}"
+
+          if [[ -z "$sam_bucket" ]]; then
+            echo "::error::AWS_SAM_BUCKET is required and must be an S3 bucket name, for example learnclip-sam-artifacts."
+            exit 1
+          fi
+
+          case "$sam_bucket" in
+            *[[:space:]]*|*\"*|*"'"*)
+              echo "::error::AWS_SAM_BUCKET must not contain spaces or quotes."
+              exit 1
+              ;;
+            */*)
+              echo "::error::AWS_SAM_BUCKET must be a bucket name only, not an s3:// URL with a path."
+              exit 1
+              ;;
+          esac
+
+          if ! [[ "$sam_bucket" =~ ^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$ ]]; then
+            echo "::error::AWS_SAM_BUCKET must be 3-63 characters, lowercase letters, numbers, dots, or hyphens, and start/end with a letter or number."
+            exit 1
+          fi
+
+          if [[ "$sam_bucket" == *..* || "$sam_bucket" == *.-* || "$sam_bucket" == *-.* ]]; then
+            echo "::error::AWS_SAM_BUCKET must not contain consecutive periods or periods adjacent to hyphens."
+            exit 1
+          fi
+
+          if [[ "$sam_bucket" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+            echo "::error::AWS_SAM_BUCKET must not be formatted as an IP address."
+            exit 1
+          fi
+
+          sam deploy \
+            --stack-name learnclip-api \
+            --s3-bucket "$sam_bucket" \
+            --region "$AWS_DEPLOY_REGION" \
+            --capabilities CAPABILITY_IAM \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --parameter-overrides \
+              "DatabaseUrl=$DATABASE_URL" \
+              "RedisUrl=$REDIS_URL" \
+              "JwtSecret=$JWT_SECRET" \
+              "JwtRefreshSecret=$JWT_REFRESH_SECRET" \
+              "GoogleClientId=$GOOGLE_CLIENT_ID" \
+              "GoogleClientSecret=$GOOGLE_CLIENT_SECRET" \
+              "GoogleCallbackUrl=$GOOGLE_CALLBACK_URL" \
+              "LlmProvider=$LLM_PROVIDER" \
+              "LlmModel=$LLM_MODEL" \
+              "GroqApiKey=$GROQ_API_KEY" \
+              "AnthropicApiKey=$ANTHROPIC_API_KEY" \
+              "StripeSecretKey=$STRIPE_SECRET_KEY" \
+              "StripeWebhookSecret=$STRIPE_WEBHOOK_SECRET" \
+              "StripeProPriceId=$STRIPE_PRO_PRICE_ID" \
+              "StripeLifetimePriceId=$STRIPE_LIFETIME_PRICE_ID" \
+              "FrontendUrl=$FRONTEND_URL"
 
   # ── 5. Deploy Web → Vercel (only if web files changed) ──────────────────────
   deploy-web:

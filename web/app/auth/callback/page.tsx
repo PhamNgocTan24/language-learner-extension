@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 /**
@@ -8,7 +8,17 @@ import { useRouter, useSearchParams } from 'next/navigation';
  * NestJS redirects here after Google OAuth with tokens in query params.
  * Stores tokens as cookies (readable by server actions) then redirects.
  */
-export default function AuthCallbackPage() {
+function SigningInFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <p className="text-sm text-gray-500">Signing you in...</p>
+      </div>
+    </div>
+  );
+}
+
+function AuthCallbackContent() {
   const router = useRouter();
   const params = useSearchParams();
 
@@ -29,7 +39,15 @@ export default function AuthCallbackPage() {
 
       // Forward tokens to Chrome extension if installed, then redirect
       const extensionId = process.env.NEXT_PUBLIC_EXTENSION_ID;
-      const chromeRuntime = (window as { chrome?: { runtime?: { sendMessage?: (...args: unknown[]) => void; lastError?: unknown } } })?.chrome?.runtime;
+      const chromeRuntime = (window as {
+        chrome?: {
+          runtime?: {
+            sendMessage?: (...args: unknown[]) => void;
+            lastError?: unknown;
+          };
+        };
+      })?.chrome?.runtime;
+
       if (typeof window !== 'undefined' && extensionId && chromeRuntime?.sendMessage) {
         try {
           await new Promise<void>((resolve) => {
@@ -44,7 +62,7 @@ export default function AuthCallbackPage() {
             setTimeout(resolve, 1000);
           });
         } catch {
-          // Extension not installed — fine
+          // Extension not installed; continue with web redirect.
         }
       }
 
@@ -54,12 +72,13 @@ export default function AuthCallbackPage() {
     run();
   }, [params, router]);
 
+  return <SigningInFallback />;
+}
+
+export default function AuthCallbackPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <div className="text-4xl mb-4">📌</div>
-        <p className="text-sm text-gray-500">Signing you in...</p>
-      </div>
-    </div>
+    <Suspense fallback={<SigningInFallback />}>
+      <AuthCallbackContent />
+    </Suspense>
   );
 }
