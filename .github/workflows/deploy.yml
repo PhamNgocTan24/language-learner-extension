@@ -68,15 +68,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-          run_install: false
-
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          # no cache here — pnpm store path fails on monorepo root
+
+      - name: Install pnpm
+        run: npm install -g pnpm@9
 
       - name: Get pnpm store path
         id: pnpm-cache
@@ -181,15 +178,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-          run_install: false
-
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          # no cache here — pnpm store path fails on monorepo root
+
+      - name: Install pnpm
+        run: npm install -g pnpm@9
 
       - name: Get pnpm store path
         id: pnpm-cache
@@ -205,7 +199,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Vercel CLI
-        run: pnpm add -g vercel@latest
+        run: npm install -g vercel@latest
 
       - name: Pull Vercel environment
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
