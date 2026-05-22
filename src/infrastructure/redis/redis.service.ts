@@ -59,6 +59,15 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     await this.client.set(`quiz:cache:${saveId}:${level}`, data, 'EX', 60 * 60 * 24 * 7);
   }
 
+  async getCachedFlashcard(saveId: string): Promise<string | null> {
+    return this.client.get(`flashcard:${saveId}`);
+  }
+
+  async setCachedFlashcard(saveId: string, data: string): Promise<void> {
+    // TTL: 30 days
+    await this.client.set(`flashcard:${saveId}`, data, 'EX', 60 * 60 * 24 * 30);
+  }
+
   // ── Rate limiting ───────────────────────────────────────────────────────
 
   async checkRateLimit(userId: string, limit = 60): Promise<boolean> {

@@ -1,7 +1,8 @@
-import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { getMe } from '@/app/actions/users';
 import Navbar from '@/components/layout/Navbar';
+import PageWrapper from '@/components/layout/PageWrapper';
 import SettingsForm from '@/components/settings/SettingsForm';
 
 export default async function SettingsPage() {
@@ -10,18 +11,14 @@ export default async function SettingsPage() {
   if (!token) redirect('/');
 
   const user = await getMe();
-  if (!user) {
-    // API unreachable or token invalid — clear cookie and re-login
-    redirect('/');
-  }
+  if (!user) redirect('/');
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-surface-page">
       <Navbar activeTab="settings" />
-      <main className="max-w-lg mx-auto px-4 md:px-8 py-8">
-        {/* Client component owns all interactive state */}
+      <PageWrapper className="max-w-lg py-8">
         <SettingsForm user={user} />
-      </main>
+      </PageWrapper>
     </div>
   );
 }

@@ -1,8 +1,16 @@
-import { Inject, Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { endOfDay, startOfDay } from 'date-fns';
+import { fromZonedTime, toZonedTime } from 'date-fns-tz';
+import { QuizEntity } from '../../domain/entities/quiz.entity';
 import { IQuizRepository } from '../../domain/interfaces/repositories/quiz.repository.interface';
 import { IISaveRepository } from '../../domain/interfaces/repositories/save.repository.interface';
 import { IUserRepository } from '../../domain/interfaces/repositories/user.repository.interface';
-import { QuizEntity } from '../../domain/entities/quiz.entity';
 import { QuizPromptBuilder } from '../../domain/services/llm/quiz-prompt.builder';
 import { LlmService } from '../../infrastructure/llm/llm.service';
 import { RedisService } from '../../infrastructure/redis/redis.service';
@@ -25,14 +33,11 @@ export class QuizService {
     const user = await this.userRepo.findById(userId);
     if (!user) throw new NotFoundException('User not found');
 
-    // Check Redis cache first — avoid duplicate LLM calls
     const cached = await this.redisService.getCachedQuiz(saveId, user.level);
     if (cached) {
       const cachedQuiz = JSON.parse(cached);
-      // If a quiz record already exists for this save, return it
       const existing = await this.quizRepo.findBySaveId(saveId);
       if (existing) return existing;
-      // Otherwise persist the cached LLM response
       return this.quizRepo.create({
         userId,
         saveId,
@@ -46,7 +51,6 @@ export class QuizService {
     const prompt = QuizPromptBuilder.build(save, user);
     const response = await this.llmService.generateQuiz(prompt);
 
-    // Cache the raw LLM response (7 days)
     await this.redisService.setCachedQuiz(saveId, user.level, JSON.stringify(response));
 
     return this.quizRepo.create({
@@ -57,6 +61,17 @@ export class QuizService {
       correct: response.correct,
       explanation: response.explanation,
     });
+  }
+
+  async generateDaily(userId: string, timezone: string): Promise<QuizEntity[]> {
+    this.assertValidTimezone(timezone);
+
+    const userDate = toZonedTime(new Date(), timezone);
+    const start = fromZonedTime(startOfDay(userDate), timezone);
+    const end = fromZonedTime(endOfDay(userDate), timezone);
+    const saves = await this.saveRepo.findByUserAndDateRange(userId, start, end);
+
+    return Promise.all(saves.map((save) => this.generate(userId, save.id)));
   }
 
   async submitAnswer(userId: string, quizId: string, userAnswer: string): Promise<QuizEntity> {
@@ -70,5 +85,13 @@ export class QuizService {
 
   async getHistory(userId: string): Promise<QuizEntity[]> {
     return this.quizRepo.findByUserId(userId);
+  }
+
+  private assertValidTimezone(timezone: string): void {
+    try {
+      Intl.DateTimeFormat('en-US', { timeZone: timezone }).format(new Date());
+    } catch {
+      throw new BadRequestException('Invalid timezone');
+    }
   }
 }

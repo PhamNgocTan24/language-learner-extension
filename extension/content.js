@@ -1,17 +1,19 @@
 /**
- * content.js — runs on every page
- * Listens for text highlight, shows floating save button.
- * ALL API calls are routed through background.js to avoid CORS issues.
+ * content.js - runs on every page.
+ * Listens for text highlight, then shows a LearnClip save confirmation panel.
  */
 
-let floatingBtn = null;
-let currentSelection = null;
+const CATEGORIES = ['Vocabulary', 'Phrase', 'Grammar', 'Idiom', 'Pronunciation'];
 
-// ── Listen for highlight ────────────────────────────────────────────────────
+let floatingBtn = null;
+let confirmationPanel = null;
+let currentSelection = null;
+let savedText = '';
+let selectedCategory = 'Vocabulary';
 
 document.addEventListener('mouseup', (e) => {
-  // Ignore clicks inside our own floating button
   if (floatingBtn && floatingBtn.contains(e.target)) return;
+  if (confirmationPanel && confirmationPanel.contains(e.target)) return;
 
   const selection = window.getSelection();
   const text = selection?.toString().trim();
@@ -26,8 +28,8 @@ document.addEventListener('mouseup', (e) => {
 
   currentSelection = {
     text,
-    sentence: getSentenceContext(anchorNode, text),
-    paragraph: parentEl?.closest('p')?.innerText?.trim() ?? null,
+    sentence: getSentenceContext(anchorNode, text) ?? '',
+    paragraph: parentEl?.closest('p')?.innerText?.trim() ?? '',
     sourceUrl: window.location.href,
     sourceTitle: document.title,
   };
@@ -39,9 +41,10 @@ document.addEventListener('mousedown', (e) => {
   if (floatingBtn && !floatingBtn.contains(e.target)) {
     removeFloatingBtn();
   }
+  if (confirmationPanel && !confirmationPanel.contains(e.target)) {
+    removeConfirmationPanel();
+  }
 });
-
-// ── Floating save button ────────────────────────────────────────────────────
 
 function showFloatingBtn(x, y) {
   removeFloatingBtn();
@@ -50,7 +53,7 @@ function showFloatingBtn(x, y) {
   floatingBtn.id = 'learnclip-btn';
   floatingBtn.innerHTML = `
     <button class="lc-save-btn" title="Save to LearnClip">
-      📌 Save
+      Save
     </button>
   `;
 
@@ -63,7 +66,7 @@ function showFloatingBtn(x, y) {
     z-index: 2147483647;
   `;
 
-  floatingBtn.querySelector('.lc-save-btn').addEventListener('click', onSaveClick);
+  floatingBtn.querySelector('.lc-save-btn').addEventListener('click', openSavePanel);
   document.body.appendChild(floatingBtn);
 }
 
@@ -74,12 +77,16 @@ function removeFloatingBtn() {
   }
 }
 
-// ── Save flow ───────────────────────────────────────────────────────────────
+function removeConfirmationPanel() {
+  if (confirmationPanel) {
+    confirmationPanel.remove();
+    confirmationPanel = null;
+  }
+}
 
-async function onSaveClick() {
+async function openSavePanel() {
   if (!currentSelection) return;
 
-  // Check auth status via background (no CORS issue there)
   const { isLoggedIn } = await sendToBackground({ type: 'GET_AUTH_STATUS' });
   if (!isLoggedIn) {
     showToast('Please log in at LearnClip first', 'error');
@@ -87,26 +94,120 @@ async function onSaveClick() {
     return;
   }
 
-  const btn = floatingBtn?.querySelector('.lc-save-btn');
-  if (btn) { btn.textContent = '⏳ Saving...'; btn.disabled = true; }
+  const rect = floatingBtn?.getBoundingClientRect();
+  const x = rect?.left ?? window.innerWidth / 2;
+  const y = rect?.bottom ?? 80;
+  removeFloatingBtn();
+
+  savedText = currentSelection.text;
+  selectedCategory = 'Vocabulary';
+  renderConfirmationPanel(x, y, true, null);
+
+  const suggestion = await sendToBackground({
+    type: 'API_SUGGEST_SAVE',
+    text: currentSelection.text,
+    sentence: currentSelection.sentence,
+    paragraph: currentSelection.paragraph,
+  });
+
+  if (!confirmationPanel) return;
+  selectedCategory = CATEGORIES.includes(suggestion.category) ? suggestion.category : 'Vocabulary';
+  renderConfirmationPanel(x, y, false, suggestion.suggest_correct_word ?? null);
+}
+
+function renderConfirmationPanel(x, y, loading, suggestCorrectWord) {
+  removeConfirmationPanel();
+
+  confirmationPanel = document.createElement('div');
+  confirmationPanel.id = 'learnclip-confirm';
+
+  const panelX = Math.min(x, window.innerWidth - 340);
+  const panelY = Math.min(y + 8, window.innerHeight - 260);
+  confirmationPanel.style.cssText = `
+    position: fixed;
+    left: ${Math.max(panelX, 8)}px;
+    top: ${Math.max(panelY, 8)}px;
+    z-index: 2147483647;
+  `;
+
+  confirmationPanel.innerHTML = `
+    <div class="lc-confirm-card">
+      <div class="lc-confirm-title">Save highlight</div>
+      ${
+        suggestCorrectWord
+          ? `
+        <div class="lc-suggest-banner">
+          <span>Ý bạn muốn nói </span>
+          <button class="lc-use-suggestion" type="button">"${escapeHtml(suggestCorrectWord)}"</button>
+          <span> không?</span>
+        </div>
+      `
+          : ''
+      }
+      <label class="lc-label">Text</label>
+      <textarea class="lc-textarea" rows="2">${escapeHtml(savedText)}</textarea>
+      <label class="lc-label">Category ${loading ? '<span class="lc-loading">suggesting...</span>' : ''}</label>
+      <div class="lc-category-row">
+        ${CATEGORIES.map(
+          (cat) => `
+          <button type="button" class="lc-category-chip ${cat === selectedCategory ? 'is-active' : ''}" data-category="${cat}">
+            ${cat}
+          </button>
+        `,
+        ).join('')}
+      </div>
+      <div class="lc-actions">
+        <button class="lc-cancel-btn" type="button">Cancel</button>
+        <button class="lc-confirm-save-btn" type="button">Save</button>
+      </div>
+    </div>
+  `;
+
+  confirmationPanel.querySelector('.lc-textarea').addEventListener('input', (event) => {
+    savedText = event.target.value;
+  });
+  confirmationPanel.querySelectorAll('.lc-category-chip').forEach((button) => {
+    button.addEventListener('click', () => {
+      selectedCategory = button.dataset.category;
+      renderConfirmationPanel(x, y, false, suggestCorrectWord);
+    });
+  });
+  confirmationPanel.querySelector('.lc-cancel-btn').addEventListener('click', () => {
+    removeConfirmationPanel();
+    currentSelection = null;
+  });
+  confirmationPanel.querySelector('.lc-confirm-save-btn').addEventListener('click', confirmSave);
+
+  const suggestionButton = confirmationPanel.querySelector('.lc-use-suggestion');
+  if (suggestionButton) {
+    suggestionButton.addEventListener('click', () => {
+      savedText = suggestCorrectWord;
+      renderConfirmationPanel(x, y, false, suggestCorrectWord);
+    });
+  }
+
+  document.body.appendChild(confirmationPanel);
+}
+
+async function confirmSave() {
+  if (!currentSelection) return;
+
+  const btn = confirmationPanel?.querySelector('.lc-confirm-save-btn');
+  if (btn) {
+    btn.textContent = 'Saving...';
+    btn.disabled = true;
+  }
 
   try {
-    // Step 1: suggest category via background (avoids CORS)
-    const { category } = await sendToBackground({
-      type: 'API_SUGGEST_CATEGORY',
-      text: currentSelection.text,
-    });
-
-    // Step 2: save via background (avoids CORS)
     const result = await sendToBackground({
       type: 'API_SAVE',
       payload: {
-        text: currentSelection.text,
+        text: savedText.trim(),
         sentence: currentSelection.sentence,
         paragraph: currentSelection.paragraph,
         sourceUrl: currentSelection.sourceUrl,
         sourceTitle: currentSelection.sourceTitle,
-        category,
+        category: selectedCategory,
       },
     });
 
@@ -117,18 +218,16 @@ async function onSaveClick() {
     } else if (!result.ok) {
       showToast('Save failed. Try again.', 'error');
     } else {
-      showToast(`✅ Saved as "${category}"`, 'success');
+      showToast(`Saved as "${selectedCategory}"`, 'success');
     }
   } catch (err) {
     console.error('[LearnClip] Save failed:', err);
     showToast('Save failed. Check your connection.', 'error');
   } finally {
-    removeFloatingBtn();
+    removeConfirmationPanel();
     currentSelection = null;
   }
 }
-
-// ── Message helper ──────────────────────────────────────────────────────────
 
 function sendToBackground(message) {
   return new Promise((resolve) => {
@@ -142,8 +241,6 @@ function sendToBackground(message) {
     });
   });
 }
-
-// ── Helpers ─────────────────────────────────────────────────────────────────
 
 function getSentenceContext(anchorNode, selectedText) {
   try {
@@ -167,4 +264,13 @@ function showToast(message, type = 'success') {
   document.body.appendChild(toast);
 
   setTimeout(() => toast.remove(), 3000);
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }

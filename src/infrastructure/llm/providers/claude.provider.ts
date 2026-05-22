@@ -1,10 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
 import Anthropic from '@anthropic-ai/sdk';
-import { ILLMProvider, QuizPrompt, QuizResponse } from '../../../domain/services/llm/llm.interface';
+import {
+  FlashcardPrompt,
+  FlashcardResponse,
+  ILLMProvider,
+  QuizPrompt,
+  QuizResponse,
+  SuggestResponse,
+} from '../../../domain/services/llm/llm.interface';
+import { FlashcardPromptBuilder } from '../../../domain/services/llm/flashcard-prompt.builder';
 import { QuizPromptBuilder } from '../../../domain/services/llm/quiz-prompt.builder';
+import { SuggestPromptBuilder } from '../../../domain/services/llm/suggest-prompt.builder';
 
 /**
- * Claude (Anthropic) provider — production.
+ * Claude (Anthropic) provider - production.
  * Uses the official @anthropic-ai/sdk.
  */
 @Injectable()
@@ -19,34 +28,36 @@ export class ClaudeProvider implements ILLMProvider {
   }
 
   async generateQuiz(prompt: QuizPrompt): Promise<QuizResponse> {
-    const text = QuizPromptBuilder.render(prompt);
+    const content = await this.complete(QuizPromptBuilder.render(prompt), 512);
+    return JSON.parse(this.stripJsonFences(content)) as QuizResponse;
+  }
+
+  async suggest(text: string, sentence: string, paragraph: string): Promise<SuggestResponse> {
+    const content = await this.complete(SuggestPromptBuilder.build(text, sentence, paragraph), 160);
+    return JSON.parse(this.stripJsonFences(content)) as SuggestResponse;
+  }
+
+  async generateFlashcard(prompt: FlashcardPrompt): Promise<FlashcardResponse> {
+    const content = await this.complete(FlashcardPromptBuilder.build(prompt), 320);
+    return JSON.parse(this.stripJsonFences(content)) as FlashcardResponse;
+  }
+
+  private async complete(text: string, maxTokens: number): Promise<string> {
     const message = await this.client.messages.create({
       model: this.model,
-      max_tokens: 512,
+      max_tokens: maxTokens,
       messages: [{ role: 'user', content: text }],
     });
 
     const content = message.content[0];
     if (content.type !== 'text') throw new Error('Unexpected Claude response type');
-    return JSON.parse(content.text) as QuizResponse;
+    return content.text;
   }
 
-  async suggestCategory(text: string): Promise<string> {
-    const message = await this.client.messages.create({
-      model: this.model,
-      max_tokens: 20,
-      messages: [
-        {
-          role: 'user',
-          content: `Classify this English text into ONE of: Vocabulary, Phrase, Grammar, Idiom, Pronunciation.
-Text: "${text}"
-Respond with only the category name, nothing else.`,
-        },
-      ],
-    });
-
-    const content = message.content[0];
-    if (content.type !== 'text') return 'Vocabulary';
-    return content.text.trim();
+  private stripJsonFences(content: string): string {
+    return content
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/\s*```$/, '')
+      .trim();
   }
 }

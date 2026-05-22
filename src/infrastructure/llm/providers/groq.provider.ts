@@ -1,9 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ILLMProvider, QuizPrompt, QuizResponse } from '../../../domain/services/llm/llm.interface';
+import {
+  FlashcardPrompt,
+  FlashcardResponse,
+  ILLMProvider,
+  QuizPrompt,
+  QuizResponse,
+  SuggestResponse,
+} from '../../../domain/services/llm/llm.interface';
+import { FlashcardPromptBuilder } from '../../../domain/services/llm/flashcard-prompt.builder';
 import { QuizPromptBuilder } from '../../../domain/services/llm/quiz-prompt.builder';
+import { SuggestPromptBuilder } from '../../../domain/services/llm/suggest-prompt.builder';
 
 /**
- * Groq provider — uses direct fetch instead of groq-sdk to avoid
+ * Groq provider - uses direct fetch instead of groq-sdk to avoid
  * Node.js runtime compatibility issues with the SDK's HTTP client.
  */
 @Injectable()
@@ -17,27 +26,27 @@ export class GroqProvider implements ILLMProvider {
     this.apiKey = process.env.GROQ_API_KEY ?? '';
     this.model = process.env.LLM_MODEL ?? 'llama-3.3-70b-versatile';
     this.logger.log(
-      `Groq init — key: ${this.apiKey ? this.apiKey.slice(0, 8) + '...' : 'MISSING'}, model: ${this.model}`,
+      `Groq init - key: ${this.apiKey ? this.apiKey.slice(0, 8) + '...' : 'MISSING'}, model: ${this.model}`,
     );
   }
 
   async generateQuiz(prompt: QuizPrompt): Promise<QuizResponse> {
     const content = await this.complete(QuizPromptBuilder.render(prompt), 512, 0.3);
-    // Strip markdown code fences if the model wraps the JSON
-    const json = content
-      .replace(/^```(?:json)?\s*/i, '')
-      .replace(/\s*```$/, '')
-      .trim();
-    return JSON.parse(json) as QuizResponse;
+    return JSON.parse(this.stripJsonFences(content)) as QuizResponse;
   }
 
-  async suggestCategory(text: string): Promise<string> {
+  async suggest(text: string, sentence: string, paragraph: string): Promise<SuggestResponse> {
     const content = await this.complete(
-      `Classify this English text into ONE of: Vocabulary, Phrase, Grammar, Idiom, Pronunciation.\nText: "${text}"\nRespond with only the category name, nothing else.`,
-      20,
+      SuggestPromptBuilder.build(text, sentence, paragraph),
+      160,
       0,
     );
-    return content.trim();
+    return JSON.parse(this.stripJsonFences(content)) as SuggestResponse;
+  }
+
+  async generateFlashcard(prompt: FlashcardPrompt): Promise<FlashcardResponse> {
+    const content = await this.complete(FlashcardPromptBuilder.build(prompt), 320, 0.2);
+    return JSON.parse(this.stripJsonFences(content)) as FlashcardResponse;
   }
 
   private async complete(
@@ -66,5 +75,12 @@ export class GroqProvider implements ILLMProvider {
 
     const data = (await res.json()) as any;
     return data.choices?.[0]?.message?.content ?? '';
+  }
+
+  private stripJsonFences(content: string): string {
+    return content
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/\s*```$/, '')
+      .trim();
   }
 }

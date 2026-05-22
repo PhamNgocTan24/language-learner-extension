@@ -27,6 +27,30 @@ export async function generateQuiz(saveId: string): Promise<Quiz | null> {
   }
 }
 
+export async function generateDailyQuiz(timezone: string): Promise<{
+  total: number;
+  quizzes: Quiz[];
+} | null> {
+  const token = await getToken();
+  if (!token) return null;
+
+  try {
+    const res = await fetch(`${API_BASE}/quiz/generate-daily`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ timezone }),
+      cache: 'no-store',
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
 export async function submitAnswer(quizId: string, answer: string): Promise<Quiz | null> {
   const token = await getToken();
   if (!token) return null;

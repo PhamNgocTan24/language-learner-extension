@@ -45,7 +45,10 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: res.statusText }));
-    throw Object.assign(new Error(error.message ?? 'API error'), { status: res.status, data: error });
+    throw Object.assign(new Error(error.message ?? 'API error'), {
+      status: res.status,
+      data: error,
+    });
   }
 
   return res.json();
@@ -56,19 +59,23 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
 export const usersApi = {
   me: () => apiFetch<User>('/users/me'),
   stats: () => apiFetch<UserStats>('/users/me/stats'),
-  update: (data: { level?: string; goal?: string }) =>
+  update: (data: { level?: string; goal?: string; nativeLanguage?: string }) =>
     apiFetch<User>('/users/me', { method: 'PATCH', body: JSON.stringify(data) }),
 };
 
 // ── Saves ────────────────────────────────────────────────────────────────────
 
 export const savesApi = {
-  list: (page = 1, limit = 20) =>
-    apiFetch<Save[]>(`/saves?page=${page}&limit=${limit}`),
+  list: (page = 1, limit = 20) => apiFetch<Save[]>(`/saves?page=${page}&limit=${limit}`),
   create: (data: CreateSavePayload) =>
     apiFetch<Save>('/saves', { method: 'POST', body: JSON.stringify(data) }),
-  delete: (id: string) =>
-    apiFetch<void>(`/saves/${id}`, { method: 'DELETE' }),
+  delete: (id: string) => apiFetch<void>(`/saves/${id}`, { method: 'DELETE' }),
+  flashcard: (id: string) => apiFetch<Flashcard>(`/saves/${id}/flashcard`),
+  suggest: (data: { text: string; sentence: string; paragraph: string }) =>
+    apiFetch<SuggestSaveResponse>('/saves/suggest', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
   suggestCategory: (text: string) =>
     apiFetch<{ category: string }>('/saves/suggest-category', {
       method: 'POST',
@@ -79,8 +86,12 @@ export const savesApi = {
 // ── Quiz ─────────────────────────────────────────────────────────────────────
 
 export const quizApi = {
-  generate: (saveId: string) =>
-    apiFetch<Quiz>(`/quiz/generate/${saveId}`, { method: 'POST' }),
+  generate: (saveId: string) => apiFetch<Quiz>(`/quiz/generate/${saveId}`, { method: 'POST' }),
+  generateDaily: (timezone: string) =>
+    apiFetch<{ total: number; quizzes: Quiz[] }>('/quiz/generate-daily', {
+      method: 'POST',
+      body: JSON.stringify({ timezone }),
+    }),
   answer: (quizId: string, answer: string) =>
     apiFetch<Quiz>(`/quiz/${quizId}/answer`, {
       method: 'POST',
@@ -109,6 +120,7 @@ export interface User {
   avatarUrl: string | null;
   level: 'A2' | 'B1' | 'B2' | 'C1';
   goal: string | null;
+  nativeLanguage: string;
   tier: 'free' | 'pro' | 'lifetime';
   createdAt: string;
 }
@@ -148,4 +160,21 @@ export interface Quiz {
   userAnswer: string | null;
   isCorrect: boolean | null;
   createdAt: string;
+}
+
+export interface SuggestSaveResponse {
+  category: string;
+  suggest_correct_word: string | null;
+}
+
+export interface Flashcard {
+  id: string;
+  text: string;
+  category: string;
+  pronunciation: string | null;
+  meaning: string;
+  usage: string;
+  example: string;
+  source_title: string;
+  source_url: string;
 }

@@ -5,6 +5,7 @@ export interface User {
   avatarUrl: string | null;
   level: 'A2' | 'B1' | 'B2' | 'C1';
   goal: string | null;
+  nativeLanguage: string;
   tier: 'free' | 'pro' | 'lifetime';
   createdAt: string;
 }
@@ -37,6 +38,9 @@ export interface CreateSavePayload {
 export interface Quiz {
   id: string;
   saveId: string;
+  category?: string | null;
+  word?: string | null;
+  meaning?: string | null;
   question: string;
   options: string[];
   correct?: string;
@@ -44,4 +48,21 @@ export interface Quiz {
   userAnswer: string | null;
   isCorrect: boolean | null;
   createdAt: string;
+}
+
+export interface SuggestSaveResponse {
+  category: string;
+  suggest_correct_word: string | null;
+}
+
+export interface Flashcard {
+  id: string;
+  text: string;
+  category: string;
+  pronunciation: string | null;
+  meaning: string;
+  usage: string;
+  example: string;
+  source_title: string;
+  source_url: string;
 }

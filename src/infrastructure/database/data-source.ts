@@ -16,6 +16,7 @@ export const AppDataSource = new DataSource({
   entities: [UserOrmEntity, SaveOrmEntity, QuizOrmEntity],
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
   synchronize: false,
-  logging: true,
+  logging: process.env.DEBUG === 'true' ? ['query', 'warn', 'error'] : ['error'],
+  logger: 'advanced-console',
   ssl: process.env.DATABASE_SSL === 'false' ? false : { rejectUnauthorized: false },
 });
