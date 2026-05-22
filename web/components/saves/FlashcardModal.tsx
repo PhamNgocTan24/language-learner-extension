@@ -19,6 +19,8 @@ export default function FlashcardModal({
   onClose,
 }: FlashcardModalProps) {
   const [flipped, setFlipped] = useState(false);
+  const shouldShowPronunciation =
+    flashcard?.category !== 'Grammar' && Boolean(flashcard?.pronunciation);
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/40 px-4 backdrop-blur-sm">
@@ -45,7 +47,7 @@ export default function FlashcardModal({
               <>
                 <CategoryBadge category={flashcard.category} />
                 <p className="mt-6 text-4xl font-bold text-gray-900">{flashcard.text}</p>
-                {flashcard.category === 'Vocabulary' && flashcard.pronunciation && (
+                {shouldShowPronunciation && (
                   <p className="mt-2 font-mono text-base text-gray-400">
                     {flashcard.pronunciation}
                   </p>

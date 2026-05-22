@@ -99,6 +99,6 @@ export class LlmService {
   }
 
   private isSaveCategory(value: any): value is SaveCategory {
-    return ['Vocabulary', 'Phrase', 'Grammar', 'Idiom', 'Pronunciation'].includes(value);
+    return ['Vocabulary', 'Phrase', 'Grammar', 'Idiom'].includes(value);
   }
 }

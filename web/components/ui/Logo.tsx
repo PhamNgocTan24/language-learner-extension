@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 
 interface LogoProps {
@@ -7,13 +8,24 @@ interface LogoProps {
 }
 
 function LogoMark({ size = 'sm' }: Pick<LogoProps, 'size'>) {
-  const boxClass = size === 'lg' ? 'h-16 w-16 rounded-xl pb-2' : 'h-8 w-8 rounded-lg pb-1';
-  const notchClass = size === 'lg' ? 'h-3 w-6 rounded' : 'h-1.5 w-3 rounded-sm';
+  const wrapperClass =
+    size === 'lg'
+      ? 'h-16 w-16 rounded-xl border border-gray-200 p-1.5'
+      : 'h-8 w-8 rounded-lg border border-gray-200 p-0.5';
+
+  const imageSize = size === 'lg' ? 52 : 28;
 
   return (
-    <div className={`${boxClass} flex items-end justify-center bg-brand-primary`}>
-      <div className={`${notchClass} bg-accent`} />
-    </div>
+    <span className={`${wrapperClass} inline-flex items-center justify-center bg-white`}>
+      <Image
+        src="/just_logo.svg"
+        alt=""
+        width={imageSize}
+        height={imageSize}
+        className="h-full w-full object-contain"
+        priority={size === 'lg'}
+      />
+    </span>
   );
 }
 

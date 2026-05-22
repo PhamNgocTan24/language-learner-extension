@@ -3,7 +3,7 @@
  * Listens for text highlight, then shows a LearnClip save confirmation panel.
  */
 
-const CATEGORIES = ['Vocabulary', 'Phrase', 'Grammar', 'Idiom', 'Pronunciation'];
+const CATEGORIES = ['Vocabulary', 'Phrase', 'Grammar', 'Idiom'];
 
 let floatingBtn = null;
 let confirmationPanel = null;

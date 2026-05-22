@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { CheckCircle, LogOut, Zap } from 'lucide-react';
 import { updateUser } from '@/app/actions/users';
 import { createCheckout, getPortalUrl } from '@/app/actions/payments';
@@ -93,9 +94,19 @@ export default function SettingsForm({ user }: SettingsFormProps) {
         </p>
 
         <div className="mb-4 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-sm font-bold text-gray-600">
-            {getInitials(user)}
-          </div>
+          {user.avatarUrl ? (
+            <Image
+              src={user.avatarUrl}
+              alt={user.name ?? 'Profile picture'}
+              width={40}
+              height={40}
+              className="h-10 w-10 rounded-full object-cover"
+            />
+          ) : (
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-sm font-bold text-gray-600">
+              {getInitials(user)}
+            </div>
+          )}
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-gray-900">
               {user.name ?? 'LearnClip User'}
@@ -107,8 +118,13 @@ export default function SettingsForm({ user }: SettingsFormProps) {
           </span>
         </div>
 
-        <AccentButton onClick={handleUpgrade}>
-          <Zap size={16} />
+        <AccentButton
+          fullWidth={false}
+          size="sm"
+          className="mx-auto w-full max-w-sm"
+          onClick={handleUpgrade}
+        >
+          <Zap size={15} />
           {user.tier === 'free' ? 'Upgrade to Pro - Unlimited saves' : 'Manage billing'}
         </AccentButton>
         <p className="mt-2 text-center text-xs text-gray-400">

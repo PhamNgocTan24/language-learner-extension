@@ -90,18 +90,25 @@ export class SavesService {
     if (save.userId !== userId) throw new ForbiddenException('Access denied');
 
     const cached = await this.redisService.getCachedFlashcard(saveId);
-    const content = cached
+    const category = this.normalizeCategory(save.category);
+    let content = cached
       ? (JSON.parse(cached) as FlashcardResponse)
       : await this.buildFlashcard(save);
+    const shouldRefreshCachedPronunciation =
+      Boolean(cached) && this.needsPronunciation(category) && !content.pronunciation;
 
-    if (!cached) {
+    if (shouldRefreshCachedPronunciation) {
+      content = await this.buildFlashcard(save);
+    }
+
+    if (!cached || shouldRefreshCachedPronunciation) {
       await this.redisService.setCachedFlashcard(saveId, JSON.stringify(content));
     }
 
     return {
       id: save.id,
       text: save.text,
-      category: save.category ?? 'Vocabulary',
+      category,
       pronunciation: content.pronunciation,
       meaning: content.meaning,
       usage: content.usage,
@@ -123,5 +130,17 @@ export class SavesService {
       userLevel: user.level,
       userNativeLanguage: user.nativeLanguage ?? 'Vietnamese',
     });
+  }
+
+  private normalizeCategory(category: SaveCategory | string | null): SaveCategory {
+    if (category === 'Phrase' || category === 'Grammar' || category === 'Idiom') {
+      return category;
+    }
+
+    return 'Vocabulary';
+  }
+
+  private needsPronunciation(category: SaveCategory): boolean {
+    return category !== 'Grammar';
   }
 }

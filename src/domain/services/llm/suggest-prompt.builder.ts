@@ -12,7 +12,8 @@ Task 1 - Categorize the highlighted text:
 - Phrase: multi-word expression (not a complete sentence)
 - Grammar: grammatical structure or rule
 - Idiom: figurative expression
-- Pronunciation: user wants to know how to pronounce it
+Do not use "Pronunciation" as a category. If the user needs pronunciation for a word,
+phrase, or idiom, keep the category as Vocabulary, Phrase, or Idiom.
 
 Task 2 - Check if the highlighted text appears to be a partial/incomplete word or phrase.
 Compare "${text}" against the sentence context.

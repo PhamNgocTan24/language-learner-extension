@@ -2,7 +2,7 @@ import { FlashcardPrompt } from './llm.interface';
 
 export class FlashcardPromptBuilder {
   static build(p: FlashcardPrompt): string {
-    const needsPronunciation = p.category === 'Vocabulary';
+    const needsPronunciation = p.category !== 'Grammar';
 
     return `
 You are an English learning assistant.
@@ -14,7 +14,7 @@ Paragraph: "${p.paragraph}"
 Category: ${p.category}
 
 Generate flashcard content. Keep everything concise.
-${needsPronunciation ? `Pronunciation: IPA format, for example /həˈloʊ/` : `Pronunciation: null (not needed for ${p.category})`}
+${needsPronunciation ? `Pronunciation: IPA format for the saved word or phrase, for example /həˈloʊ/` : `Pronunciation: null (not needed for Grammar)`}
 Meaning: 1-2 short definitions in ${p.userNativeLanguage}
 Usage: 1 short sentence explaining when/how to use it (in English)
 Example: 1 natural example sentence using this word in a similar context to "${p.sentence}"

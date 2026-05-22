@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { getMe } from '@/app/actions/users';
 
 /**
  * /auth/callback
@@ -66,7 +67,8 @@ function AuthCallbackContent() {
         }
       }
 
-      router.replace('/dashboard');
+      const user = await getMe();
+      router.replace(user?.goal ? '/dashboard' : '/onboarding');
     }
 
     run();

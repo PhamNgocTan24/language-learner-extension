@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Brain, MousePointerClick, TrendingUp } from 'lucide-react';
+import { Brain, MousePointerClick, TrendingUp, Zap } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import PageWrapper from '@/components/layout/PageWrapper';
 import Logo from '@/components/ui/Logo';
@@ -64,7 +64,8 @@ export default function LandingPage() {
 
       <section className="fade-in">
         <PageWrapper size="landing" className="pb-16 pt-24 text-center">
-          <div className="mx-auto inline-flex rounded-full border border-accent-light bg-accent-light px-4 py-1.5 text-xs font-medium text-accent-hover">
+          <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-accent-light bg-accent-light px-4 py-1.5 text-xs font-semibold text-accent-hover">
+            <Zap size={14} className="text-accent" />
             Chrome Extension - Free forever
           </div>
 

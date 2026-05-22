@@ -3,7 +3,6 @@ const categoryColors: Record<string, string> = {
   Phrase: 'bg-accent-light text-accent-hover',
   Grammar: 'bg-purple-50 text-purple-700',
   Idiom: 'bg-teal-50 text-teal-700',
-  Pronunciation: 'bg-gray-100 text-gray-600',
 };
 
 interface CategoryBadgeProps {
@@ -11,7 +10,7 @@ interface CategoryBadgeProps {
 }
 
 export default function CategoryBadge({ category }: CategoryBadgeProps) {
-  const label = category ?? 'Vocabulary';
+  const label = category === 'Pronunciation' ? 'Vocabulary' : (category ?? 'Vocabulary');
   const color = categoryColors[label] ?? 'bg-gray-100 text-gray-600';
 
   return (

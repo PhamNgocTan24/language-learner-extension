@@ -90,7 +90,7 @@ const QUESTIONS = [
     correct: 2,
   },
   {
-    category: 'Pronunciation',
+    category: 'Vocabulary',
     level: 'B2',
     text: 'Which word has a different vowel sound?',
     options: ['seat', 'need', 'green', 'bread'],

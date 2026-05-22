@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { getFlashcard } from '@/app/actions/saves';
+import { deleteSave, getFlashcard } from '@/app/actions/saves';
 import { generateDailyQuiz } from '@/app/actions/quiz';
 import DailyQuizSession from '@/components/quiz/DailyQuizSession';
 import type { Flashcard, Quiz, Save } from '@/lib/types';
@@ -13,6 +13,8 @@ interface SavesListProps {
 }
 
 export default function SavesList({ initialSaves }: SavesListProps) {
+  const [saves, setSaves] = useState<Save[]>(initialSaves);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [flashcard, setFlashcard] = useState<Flashcard | null>(null);
   const [flashcardError, setFlashcardError] = useState<string | null>(null);
   const [flashcardLoading, setFlashcardLoading] = useState(false);
@@ -58,6 +60,16 @@ export default function SavesList({ initialSaves }: SavesListProps) {
     setDailyQuizzes(result.quizzes);
   }
 
+  async function handleDelete(id: string) {
+    setDeletingId(id);
+    try {
+      await deleteSave(id);
+      setSaves((current) => current.filter((save) => save.id !== id));
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   return (
     <>
       <div className="mb-4 flex items-center justify-between">
@@ -81,7 +93,7 @@ export default function SavesList({ initialSaves }: SavesListProps) {
         <DailyQuizSession quizzes={dailyQuizzes} onClose={() => setDailyQuizzes(null)} />
       )}
 
-      {initialSaves.length === 0 ? (
+      {saves.length === 0 ? (
         <div className="rounded-xl border border-gray-100 bg-white py-16 text-center">
           <p className="text-base text-gray-500">No saves yet.</p>
           <p className="mt-1 text-sm text-gray-500">
@@ -90,8 +102,14 @@ export default function SavesList({ initialSaves }: SavesListProps) {
         </div>
       ) : (
         <div>
-          {initialSaves.map((save) => (
-            <SaveItem key={save.id} save={save} onOpen={openFlashcard} />
+          {saves.map((save) => (
+            <SaveItem
+              key={save.id}
+              save={save}
+              deleting={deletingId === save.id}
+              onOpen={openFlashcard}
+              onDelete={handleDelete}
+            />
           ))}
         </div>
       )}
