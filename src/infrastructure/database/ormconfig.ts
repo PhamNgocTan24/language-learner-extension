@@ -10,6 +10,7 @@ export const typeOrmConfig = (): TypeOrmModuleOptions => ({
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
   // Keep remote databases migration-driven by default.
   synchronize: process.env.TYPEORM_SYNCHRONIZE === 'true',
-  logging: process.env.NODE_ENV === 'development',
+  logging: process.env.DEBUG === 'true' ? ['query', 'warn', 'error'] : ['error'],
+  logger: 'advanced-console',
   ssl: process.env.DATABASE_SSL === 'false' ? false : { rejectUnauthorized: false },
 });

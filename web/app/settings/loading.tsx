@@ -1,14 +1,15 @@
 import Navbar from '@/components/layout/Navbar';
+import PageWrapper from '@/components/layout/PageWrapper';
 
 export default function SettingsLoading() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-surface-page">
       <Navbar activeTab="settings" />
-      <main className="max-w-lg mx-auto px-4 md:px-8 py-8 flex flex-col gap-6">
-        {[1, 2, 3].map((n) => (
-          <div key={n} className="bg-white rounded-xl border border-gray-100 p-6 h-40 animate-pulse" />
+      <PageWrapper className="flex max-w-lg flex-col gap-4 py-8">
+        {[1, 2, 3].map((item) => (
+          <div key={item} className="h-40 rounded-xl border border-gray-100 bg-white p-6" />
         ))}
-      </main>
+      </PageWrapper>
     </div>
   );
 }

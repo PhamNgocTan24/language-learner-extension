@@ -11,4 +11,12 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   goal?: string;
+
+  @ApiPropertyOptional({
+    enum: ['Vietnamese', 'Indonesian', 'Thai', 'Other'],
+    example: 'Vietnamese',
+  })
+  @IsOptional()
+  @IsString()
+  nativeLanguage?: string;
 }

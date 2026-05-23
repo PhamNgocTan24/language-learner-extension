@@ -2,7 +2,7 @@
  * Domain Save entity — represents a text highlight saved by a user.
  * Pure TypeScript, no ORM decorators.
  */
-export type SaveCategory = 'Vocabulary' | 'Phrase' | 'Grammar' | 'Idiom' | 'Pronunciation';
+export type SaveCategory = 'Vocabulary' | 'Phrase' | 'Grammar' | 'Idiom';
 
 export class SaveEntity {
   id: string;

@@ -1,12 +1,13 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { IUserRepository } from '../../domain/interfaces/repositories/user.repository.interface';
 import { IQuizRepository } from '../../domain/interfaces/repositories/quiz.repository.interface';
-import { UserEntity, UserLevel, UserGoal } from '../../domain/entities/user.entity';
+import { NativeLanguage, UserEntity, UserGoal, UserLevel } from '../../domain/entities/user.entity';
 import { DifficultyDomainService } from '../../domain/services/difficulty.domain.service';
 
 interface UpdateUserDto {
   level?: UserLevel;
   goal?: UserGoal;
+  nativeLanguage?: NativeLanguage;
 }
 
 @Injectable()
