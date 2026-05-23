@@ -80,8 +80,14 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: web/pnpm-lock.yaml
 
+      - name: Disable parent pnpm workspace
+        run: |
+          if [ -f ../pnpm-workspace.yaml ]; then
+            mv ../pnpm-workspace.yaml ../pnpm-workspace.yaml.web-ci
+          fi
+
       - name: Install deps
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-workspace --package-import-method=copy
 
       - name: Lint
         run: pnpm run lint
@@ -287,8 +293,14 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: web/pnpm-lock.yaml
 
+      - name: Disable parent pnpm workspace
+        run: |
+          if [ -f ../pnpm-workspace.yaml ]; then
+            mv ../pnpm-workspace.yaml ../pnpm-workspace.yaml.web-deploy
+          fi
+
       - name: Install deps
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-workspace --package-import-method=copy
 
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
@@ -335,4 +347,4 @@ jobs:
           vercel "${build_args[@]}"
 
       - name: Deploy prebuilt to Vercel
-        run: vercel deploy --prebuilt --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel deploy --prebuilt --archive=tgz --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
