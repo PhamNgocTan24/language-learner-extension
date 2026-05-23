@@ -296,7 +296,10 @@ jobs:
       - name: Pull Vercel environment
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
-      - name: Deploy to Vercel
+      - name: Clean build cache
+        run: rm -rf .next .vercel/output
+
+      - name: Build with Vercel
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
@@ -310,13 +313,10 @@ jobs:
             exit 1
           fi
 
-          vercel_args=(
-            deploy
+          build_args=(
+            build
             --prod
-            --yes
             --token="$VERCEL_TOKEN"
-            --build-env "NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL"
-            --env "NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL"
           )
 
           add_public_env_if_set() {
@@ -324,11 +324,15 @@ jobs:
             local value="$2"
 
             if [[ -n "$value" ]]; then
-              vercel_args+=(--build-env "$name=$value" --env "$name=$value")
+              export "$name=$value"
             fi
           }
 
+          export NEXT_PUBLIC_API_URL="$NEXT_PUBLIC_API_URL"
           add_public_env_if_set "NEXT_PUBLIC_EXTENSION_ID" "$NEXT_PUBLIC_EXTENSION_ID"
           add_public_env_if_set "NEXT_PUBLIC_STRIPE_PRO_PRICE_ID" "$NEXT_PUBLIC_STRIPE_PRO_PRICE_ID"
 
-          vercel "${vercel_args[@]}"
+          vercel "${build_args[@]}"
+
+      - name: Deploy prebuilt to Vercel
+        run: vercel deploy --prebuilt --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
