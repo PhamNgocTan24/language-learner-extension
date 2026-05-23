@@ -33,3 +33,5 @@ Thumbs.db
 
 # TypeORM
 src/infrastructure/database/migrations/*.js
+
+output/

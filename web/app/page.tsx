@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Brain, MousePointerClick, TrendingUp, Zap } from 'lucide-react';
+import { Bookmark, Brain, MousePointerClick, TrendingUp } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import PageWrapper from '@/components/layout/PageWrapper';
 import Logo from '@/components/ui/Logo';
@@ -62,40 +62,99 @@ export default function LandingPage() {
     <main className="min-h-screen bg-surface-page text-gray-900">
       <Navbar variant="landing" />
 
-      <section className="fade-in">
-        <PageWrapper size="landing" className="pb-16 pt-24 text-center">
-          <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-accent-light bg-accent-light px-4 py-1.5 text-xs font-semibold text-accent-hover">
-            <Zap size={14} className="text-accent" />
-            Chrome Extension - Free forever
+      <section
+        style={{ background: 'radial-gradient(ellipse at 50% -10%, #dbeafe 0%, #f1f5f9 55%)' }}
+        className="fade-in flex min-h-[calc(100vh-64px)] items-center"
+      >
+        <div className="mx-auto w-full max-w-5xl px-6 py-20">
+          <div className="flex flex-row items-center gap-16 max-md:flex-col">
+            <div className="flex-1 text-left max-md:text-center">
+              <div className="inline-flex items-center gap-2 rounded-full border border-accent-light bg-accent-light px-4 py-1.5 text-xs font-semibold text-accent-hover">
+                ⚡ Chrome Extension — Free forever
+              </div>
+
+              <div className="mt-8 hidden justify-center max-md:flex">
+                <Logo markOnly size="lg" />
+              </div>
+
+              <h1 className="mt-8 max-w-2xl text-5xl font-extrabold leading-tight max-md:mx-auto md:text-6xl">
+                Save English. <span className="text-accent">Quiz</span>
+                <br />
+                <span className="text-accent">Yourself</span> Later.
+              </h1>
+
+              <p className="mt-4 max-w-2xl text-lg leading-relaxed text-gray-500 max-md:mx-auto">
+                Highlight English while browsing, save it with context, and turn your own reading
+                into quick flashcards and quizzes.
+              </p>
+
+              <a
+                href={`${API_URL}/auth/google`}
+                className="mt-8 flex max-w-sm items-center justify-center gap-2 rounded-full bg-accent px-8 py-3.5 font-semibold text-white transition-colors hover:bg-accent-hover max-md:mx-auto"
+              >
+                <GoogleIcon />
+                Sign in with Google - Free
+              </a>
+
+              <div className="mt-3 space-y-1 text-left max-md:text-center">
+                <p className="text-xs text-gray-400">
+                  No credit card. 20 saves/month free forever.
+                </p>
+                <p className="text-xs text-gray-400">
+                  <span className="font-semibold text-gray-600">500+</span> learners already
+                  building vocabulary from what they read
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-1 justify-center max-md:hidden">
+              <div
+                style={{ transform: 'rotate(2deg)' }}
+                className="w-72 rounded-2xl border border-gray-200 bg-white p-4 shadow-lg"
+              >
+                <div className="flex items-center gap-2">
+                  <Bookmark size={16} className="fill-blue-500 text-blue-500" />
+                  <span className="text-sm font-semibold text-gray-900">LearnClip</span>
+                </div>
+
+                <div className="mt-5">
+                  <p className="text-xs text-gray-400">You highlighted</p>
+                  <div className="mt-2 inline-flex rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-700">
+                    compelling
+                  </div>
+                  <p className="mt-3 text-xs leading-relaxed text-gray-500">
+                    ...making a compelling case for remote work...
+                  </p>
+                </div>
+
+                <div className="mt-5">
+                  <p className="text-xs text-gray-400">Category</p>
+                  <div className="mt-2 flex gap-1">
+                    <span className="rounded-full bg-brand-primary px-2 py-0.5 text-xs text-white">
+                      Vocabulary
+                    </span>
+                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+                      Phrase
+                    </span>
+                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+                      Grammar
+                    </span>
+                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+                      Idiom
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="mt-4 w-full rounded-xl bg-amber-400 py-2 text-sm font-semibold text-white"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
           </div>
-
-          <div className="mt-8 flex justify-center">
-            <Logo markOnly size="lg" />
-          </div>
-
-          <h1 className="mx-auto mt-8 max-w-2xl text-5xl font-extrabold leading-tight md:text-6xl">
-            Save English. <span className="text-accent">Quiz</span>
-            <br />
-            <span className="text-accent">Yourself</span> Later.
-          </h1>
-
-          <p className="mx-auto mt-4 max-w-2xl text-lg leading-relaxed text-gray-500">
-            Highlight English while browsing, save it with context, and turn your own reading into
-            quick flashcards and quizzes.
-          </p>
-
-          <a
-            href={`${API_URL}/auth/google`}
-            className="mx-auto mt-8 flex max-w-sm items-center justify-center gap-2 rounded-full bg-accent px-8 py-3.5 font-semibold text-white transition-colors hover:bg-accent-hover"
-          >
-            <GoogleIcon />
-            Sign in with Google - Free
-          </a>
-
-          <p className="mt-3 text-xs text-gray-400">
-            No credit card. 20 saves/month free forever.
-          </p>
-        </PageWrapper>
+        </div>
       </section>
 
       <section className="bg-white">

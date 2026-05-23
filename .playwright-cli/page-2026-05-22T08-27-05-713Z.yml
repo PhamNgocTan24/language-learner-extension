@@ -1,0 +1,74 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - link "LearnClip" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e7]: LearnClip
+      - link "Get Started Free" [ref=e8] [cursor=pointer]:
+        - /url: http://localhost:3000/auth/google
+    - generic [ref=e11]:
+      - generic [ref=e12]:
+        - generic [ref=e13]: ⚡ Chrome Extension — Free forever
+        - heading "Save English. Quiz Yourself Later." [level=1] [ref=e14]:
+          - text: Save English. Quiz
+          - text: Yourself Later.
+        - paragraph [ref=e15]: Highlight English while browsing, save it with context, and turn your own reading into quick flashcards and quizzes.
+        - link "Sign in with Google - Free" [ref=e16] [cursor=pointer]:
+          - /url: http://localhost:3000/auth/google
+          - img [ref=e17]
+          - text: Sign in with Google - Free
+        - generic [ref=e22]:
+          - paragraph [ref=e23]: No credit card. 20 saves/month free forever.
+          - paragraph [ref=e24]: 500+ learners already building vocabulary from what they read
+      - generic [ref=e26]:
+        - generic [ref=e27]:
+          - img [ref=e28]
+          - generic [ref=e30]: LearnClip
+        - generic [ref=e31]:
+          - paragraph [ref=e32]: You highlighted
+          - generic [ref=e33]: compelling
+          - paragraph [ref=e34]: ...making a compelling case for remote work...
+        - generic [ref=e35]:
+          - paragraph [ref=e36]: Category
+          - generic [ref=e37]:
+            - generic [ref=e38]: Vocabulary
+            - generic [ref=e39]: Phrase
+            - generic [ref=e40]: Grammar
+            - generic [ref=e41]: Idiom
+        - button "Save" [ref=e42]
+    - generic [ref=e44]:
+      - generic [ref=e45]:
+        - img [ref=e47]
+        - heading "Highlight anything" [level=3] [ref=e53]
+        - paragraph [ref=e54]: Save useful words and phrases from any page while you read.
+      - generic [ref=e55]:
+        - img [ref=e57]
+        - heading "Quiz from context" [level=3] [ref=e65]
+        - paragraph [ref=e66]: Practice with questions generated from the sentence you actually saw.
+      - generic [ref=e67]:
+        - img [ref=e69]
+        - heading "Track your level" [level=3] [ref=e72]
+        - paragraph [ref=e73]: Keep saves, quiz history, and accuracy in one focused workspace.
+    - generic [ref=e75]:
+      - heading "How it works" [level=2] [ref=e76]
+      - generic [ref=e77]:
+        - generic [ref=e78]:
+          - paragraph [ref=e79]: "01"
+          - heading "Clip English" [level=3] [ref=e80]
+          - paragraph [ref=e81]: Select a word or phrase in Chrome and save it with the surrounding context.
+        - generic [ref=e82]:
+          - paragraph [ref=e83]: "02"
+          - heading "Review meaning" [level=3] [ref=e84]
+          - paragraph [ref=e85]: Open a flashcard to see pronunciation, meaning, usage, and an example.
+        - generic [ref=e86]:
+          - paragraph [ref=e87]: "03"
+          - heading "Quiz later" [level=3] [ref=e88]
+          - paragraph [ref=e89]: Answer short multiple-choice quizzes and build recall from your own saves.
+    - generic [ref=e91]:
+      - heading "Start saving English today" [level=2] [ref=e92]
+      - paragraph [ref=e93]: A focused workspace for the words and phrases you actually meet.
+      - link "Get started - it's free" [ref=e94] [cursor=pointer]:
+        - /url: http://localhost:3000/auth/google
+  - button "Open Next.js Dev Tools" [ref=e100] [cursor=pointer]:
+    - img [ref=e101]
+  - alert [ref=e104]
