@@ -87,7 +87,13 @@ function removeConfirmationPanel() {
 async function openSavePanel() {
   if (!currentSelection) return;
 
-  const { isLoggedIn } = await sendToBackground({ type: 'GET_AUTH_STATUS' });
+  const { isLoggedIn, error } = await sendToBackground({ type: 'GET_AUTH_STATUS' });
+  if (error === 'extension_context_invalidated') {
+    showToast('Extension was reloaded. Refresh this page and try again.', 'error');
+    removeFloatingBtn();
+    return;
+  }
+
   if (!isLoggedIn) {
     showToast('Please log in at LearnClip first', 'error');
     removeFloatingBtn();
@@ -123,6 +129,10 @@ function renderConfirmationPanel(x, y, loading, suggestCorrectWord) {
 
   const panelX = Math.min(x, window.innerWidth - 340);
   const panelY = Math.min(y + 8, window.innerHeight - 260);
+  const correctedText = normalizeSuggestion(suggestCorrectWord);
+  const contextText =
+    currentSelection?.sentence || currentSelection?.paragraph || currentSelection?.text || savedText;
+
   confirmationPanel.style.cssText = `
     position: fixed;
     left: ${Math.max(panelX, 8)}px;
@@ -132,20 +142,34 @@ function renderConfirmationPanel(x, y, loading, suggestCorrectWord) {
 
   confirmationPanel.innerHTML = `
     <div class="lc-confirm-card">
-      <div class="lc-confirm-title">Save highlight</div>
-      ${
-        suggestCorrectWord
-          ? `
-        <div class="lc-suggest-banner">
-          <span>Ý bạn muốn nói </span>
-          <button class="lc-use-suggestion" type="button">"${escapeHtml(suggestCorrectWord)}"</button>
-          <span> không?</span>
+      <div class="lc-confirm-header">
+        <span class="lc-logo-mark" aria-hidden="true"></span>
+        <span class="lc-confirm-title">LearnClip</span>
+      </div>
+      <div class="lc-divider"></div>
+
+      <div class="lc-highlight-block">
+        <div class="lc-edit-wrap">
+          <input class="lc-highlight-input" type="text" value="${escapeHtml(savedText)}" />
+          <span class="lc-edit-icon" aria-hidden="true">✎</span>
         </div>
+        ${
+          correctedText
+            ? `
+        <button class="lc-suggestion-chip" type="button">
+          <span class="lc-suggestion-icon" aria-hidden="true">💡</span>
+          ${escapeHtml(correctedText)}
+        </button>
       `
-          : ''
-      }
-      <label class="lc-label">Text</label>
-      <textarea class="lc-textarea" rows="2">${escapeHtml(savedText)}</textarea>
+            : ''
+        }
+        <p class="lc-context">${renderContextSnippet(
+          contextText,
+          currentSelection?.text ?? savedText,
+          savedText,
+        )}</p>
+      </div>
+
       <label class="lc-label">Category ${loading ? '<span class="lc-loading">suggesting...</span>' : ''}</label>
       <div class="lc-category-row">
         ${CATEGORIES.map(
@@ -157,34 +181,34 @@ function renderConfirmationPanel(x, y, loading, suggestCorrectWord) {
         ).join('')}
       </div>
       <div class="lc-actions">
-        <button class="lc-cancel-btn" type="button">Cancel</button>
         <button class="lc-confirm-save-btn" type="button">Save</button>
       </div>
     </div>
   `;
 
-  confirmationPanel.querySelector('.lc-textarea').addEventListener('input', (event) => {
+  const input = confirmationPanel.querySelector('.lc-highlight-input');
+  input.addEventListener('input', (event) => {
     savedText = event.target.value;
+    renderConfirmationPanel(x, y, false, suggestCorrectWord);
   });
+  input.focus();
+  input.setSelectionRange(input.value.length, input.value.length);
+
+  const suggestionButton = confirmationPanel.querySelector('.lc-suggestion-chip');
+  if (suggestionButton) {
+    suggestionButton.addEventListener('click', () => {
+      savedText = correctedText;
+      renderConfirmationPanel(x, y, false, suggestCorrectWord);
+    });
+  }
+
   confirmationPanel.querySelectorAll('.lc-category-chip').forEach((button) => {
     button.addEventListener('click', () => {
       selectedCategory = button.dataset.category;
       renderConfirmationPanel(x, y, false, suggestCorrectWord);
     });
   });
-  confirmationPanel.querySelector('.lc-cancel-btn').addEventListener('click', () => {
-    removeConfirmationPanel();
-    currentSelection = null;
-  });
   confirmationPanel.querySelector('.lc-confirm-save-btn').addEventListener('click', confirmSave);
-
-  const suggestionButton = confirmationPanel.querySelector('.lc-use-suggestion');
-  if (suggestionButton) {
-    suggestionButton.addEventListener('click', () => {
-      savedText = suggestCorrectWord;
-      renderConfirmationPanel(x, y, false, suggestCorrectWord);
-    });
-  }
 
   document.body.appendChild(confirmationPanel);
 }
@@ -231,14 +255,24 @@ async function confirmSave() {
 
 function sendToBackground(message) {
   return new Promise((resolve) => {
-    chrome.runtime.sendMessage(message, (response) => {
-      if (chrome.runtime.lastError) {
-        console.error('[LearnClip]', chrome.runtime.lastError.message);
-        resolve({});
-      } else {
-        resolve(response ?? {});
-      }
-    });
+    if (!globalThis.chrome?.runtime?.id) {
+      resolve({ ok: false, error: 'extension_context_invalidated' });
+      return;
+    }
+
+    try {
+      chrome.runtime.sendMessage(message, (response) => {
+        if (chrome.runtime.lastError) {
+          console.error('[LearnClip]', chrome.runtime.lastError.message);
+          resolve({ ok: false, error: 'extension_context_invalidated' });
+        } else {
+          resolve(response ?? {});
+        }
+      });
+    } catch (err) {
+      console.error('[LearnClip] Failed to message extension background:', err);
+      resolve({ ok: false, error: 'extension_context_invalidated' });
+    }
   });
 }
 
@@ -264,6 +298,43 @@ function showToast(message, type = 'success') {
   document.body.appendChild(toast);
 
   setTimeout(() => toast.remove(), 3000);
+}
+
+function normalizeSuggestion(value) {
+  const suggestion = String(value ?? '').trim();
+  if (!suggestion) return null;
+  if (suggestion.toLowerCase() === savedText.trim().toLowerCase()) return null;
+  return suggestion;
+}
+
+function renderContextSnippet(context, highlightedText, fallbackText) {
+  const text = String(context ?? '').trim();
+  const highlight = String(highlightedText ?? '').trim();
+  const fallback = String(fallbackText ?? '').trim();
+
+  if (!text || !highlight) {
+    return `...<span class="lc-context-highlight">${escapeHtml(highlight || fallback || text)}</span>...`;
+  }
+
+  const index = text.toLowerCase().indexOf(highlight.toLowerCase());
+  if (index === -1) {
+    const fallbackIndex = fallback ? text.toLowerCase().indexOf(fallback.toLowerCase()) : -1;
+    if (fallbackIndex === -1) {
+      return `...<span class="lc-context-highlight">${escapeHtml(highlight)}</span>...`;
+    }
+
+    return renderContextSnippet(text, fallback, '');
+  }
+
+  const beforeStart = Math.max(index - 28, 0);
+  const afterEnd = Math.min(index + highlight.length + 28, text.length);
+  const before = text.slice(beforeStart, index);
+  const match = text.slice(index, index + highlight.length);
+  const after = text.slice(index + highlight.length, afterEnd);
+  const prefix = beforeStart > 0 ? '...' : '';
+  const suffix = afterEnd < text.length ? '...' : '';
+
+  return `${prefix}${escapeHtml(before)}<span class="lc-context-highlight">${escapeHtml(match)}</span>${escapeHtml(after)}${suffix}`;
 }
 
 function escapeHtml(value) {
