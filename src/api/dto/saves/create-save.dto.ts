@@ -32,10 +32,10 @@ export class CreateSaveDto {
   sourceTitle?: string;
 
   @ApiPropertyOptional({
-    enum: ['Vocabulary', 'Phrase', 'Grammar', 'Idiom', 'Pronunciation'],
+    enum: ['Vocabulary', 'Phrase', 'Grammar', 'Idiom'],
     example: 'Vocabulary',
   })
   @IsOptional()
-  @IsIn(['Vocabulary', 'Phrase', 'Grammar', 'Idiom', 'Pronunciation'])
+  @IsIn(['Vocabulary', 'Phrase', 'Grammar', 'Idiom'])
   category?: string;
 }

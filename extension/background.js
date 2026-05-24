@@ -27,7 +27,7 @@ chrome.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
       url.pathname === '/auth/callback' &&
       url.searchParams.has('accessToken')
     ) {
-      const accessToken  = url.searchParams.get('accessToken');
+      const accessToken = url.searchParams.get('accessToken');
       const refreshToken = url.searchParams.get('refreshToken');
       if (!accessToken || !refreshToken) return;
 
@@ -52,7 +52,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 async function handleMessage(message, sendResponse) {
   try {
     switch (message.type) {
-
       case 'AUTH_TOKENS': {
         const { accessToken, refreshToken } = message;
         const tokenExpiry = Date.now() + 14 * 60 * 1000; // 14 min
@@ -87,7 +86,10 @@ async function handleMessage(message, sendResponse) {
 
       case 'API_SUGGEST_CATEGORY': {
         const token = await getToken();
-        if (!token) { sendResponse({ category: 'Vocabulary' }); break; }
+        if (!token) {
+          sendResponse({ category: 'Vocabulary' });
+          break;
+        }
 
         try {
           const res = await fetch(`${API_BASE}/saves/suggest-category`, {
@@ -103,9 +105,40 @@ async function handleMessage(message, sendResponse) {
         break;
       }
 
+      case 'API_SUGGEST_SAVE': {
+        const token = await getToken();
+        if (!token) {
+          sendResponse({ category: 'Vocabulary', suggest_correct_word: null });
+          break;
+        }
+
+        try {
+          const res = await fetch(`${API_BASE}/saves/suggest`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({
+              text: message.text,
+              sentence: message.sentence ?? '',
+              paragraph: message.paragraph ?? '',
+            }),
+          });
+          const data = res.ok ? await res.json() : {};
+          sendResponse({
+            category: data.category ?? 'Vocabulary',
+            suggest_correct_word: data.suggest_correct_word ?? null,
+          });
+        } catch {
+          sendResponse({ category: 'Vocabulary', suggest_correct_word: null });
+        }
+        break;
+      }
+
       case 'API_SAVE': {
         const token = await getToken();
-        if (!token) { sendResponse({ ok: false, error: 'not_logged_in' }); break; }
+        if (!token) {
+          sendResponse({ ok: false, error: 'not_logged_in' });
+          break;
+        }
 
         try {
           const res = await fetch(`${API_BASE}/saves`, {
@@ -130,7 +163,10 @@ async function handleMessage(message, sendResponse) {
 
       case 'API_GET_ME': {
         const token = await getToken();
-        if (!token) { sendResponse({ user: null }); break; }
+        if (!token) {
+          sendResponse({ user: null });
+          break;
+        }
 
         try {
           const res = await fetch(`${API_BASE}/users/me`, {
@@ -146,7 +182,10 @@ async function handleMessage(message, sendResponse) {
 
       case 'API_GET_STATS': {
         const token = await getToken();
-        if (!token) { sendResponse({ stats: null }); break; }
+        if (!token) {
+          sendResponse({ stats: null });
+          break;
+        }
 
         try {
           const res = await fetch(`${API_BASE}/users/me/stats`, {

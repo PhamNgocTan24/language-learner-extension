@@ -15,7 +15,9 @@ import { plainToInstance } from 'class-transformer';
 import { JwtAuthGuard } from '../../application/auth/guards/jwt-auth.guard';
 import { SavesService } from '../../application/services/saves.service';
 import { CreateSaveDto } from '../dto/saves/create-save.dto';
+import { FlashcardResponseDto } from '../dto/saves/flashcard-response.dto';
 import { SaveResponseDto } from '../dto/saves/save-response.dto';
+import { SuggestSaveDto } from '../dto/saves/suggest-save.dto';
 
 @ApiTags('Saves')
 @ApiBearerAuth('access-token')
@@ -56,5 +58,18 @@ export class SavesController {
   async suggestCategory(@Body('text') text: string) {
     const category = await this.savesService.suggestCategory(text);
     return { category };
+  }
+
+  @ApiOperation({ summary: 'Ask LLM to suggest category and corrected highlight text' })
+  @Post('suggest')
+  async suggest(@Body() dto: SuggestSaveDto) {
+    return this.savesService.suggest(dto.text, dto.sentence, dto.paragraph);
+  }
+
+  @ApiOperation({ summary: 'Generate or return cached flashcard data for a save' })
+  @Get(':id/flashcard')
+  async flashcard(@Req() req: any, @Param('id', ParseUUIDPipe) id: string) {
+    const flashcard = await this.savesService.getFlashcard(req.user.userId, id);
+    return plainToInstance(FlashcardResponseDto, flashcard, { excludeExtraneousValues: true });
   }
 }

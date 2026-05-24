@@ -1,7 +1,7 @@
 'use server';
 
 import { cookies } from 'next/headers';
-import type { Save } from '@/lib/types';
+import type { Flashcard, Save, SuggestSaveResponse } from '@/lib/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 
@@ -37,6 +37,46 @@ export async function deleteSave(id: string): Promise<void> {
     });
   } catch {
     // silently fail — caller can revalidate
+  }
+}
+
+export async function getFlashcard(id: string): Promise<Flashcard | null> {
+  const token = await getToken();
+  if (!token) return null;
+
+  try {
+    const res = await fetch(`${API_BASE}/saves/${id}/flashcard`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: 'no-store',
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function suggestSave(
+  text: string,
+  sentence: string,
+  paragraph: string,
+): Promise<SuggestSaveResponse> {
+  const token = await getToken();
+  if (!token) return { category: 'Vocabulary', suggest_correct_word: null };
+
+  try {
+    const res = await fetch(`${API_BASE}/saves/suggest`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ text, sentence, paragraph }),
+    });
+    if (!res.ok) return { category: 'Vocabulary', suggest_correct_word: null };
+    return res.json();
+  } catch {
+    return { category: 'Vocabulary', suggest_correct_word: null };
   }
 }
 

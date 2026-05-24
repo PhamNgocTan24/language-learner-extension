@@ -38,6 +38,17 @@ export class SaveRepository implements IISaveRepository {
     return rows.map((r) => this.toDomain(r));
   }
 
+  async findByUserAndDateRange(userId: string, start: Date, end: Date): Promise<SaveEntity[]> {
+    const rows = await this.repo.find({
+      where: {
+        userId,
+        createdAt: Between(start, end),
+      },
+      order: { createdAt: 'ASC' },
+    });
+    return rows.map((r) => this.toDomain(r));
+  }
+
   async countByUserAndMonth(userId: string, year: number, month: number): Promise<number> {
     const start = new Date(year, month - 1, 1);
     const end = new Date(year, month, 1);

@@ -42,7 +42,11 @@ export async function getStats(): Promise<UserStats | null> {
   }
 }
 
-export async function updateUser(data: { level?: string; goal?: string }): Promise<User | null> {
+export async function updateUser(data: {
+  level?: string;
+  goal?: string;
+  nativeLanguage?: string;
+}): Promise<User | null> {
   const token = await getToken();
   if (!token) return null;
 

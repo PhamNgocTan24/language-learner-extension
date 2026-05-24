@@ -1,10 +1,17 @@
 import { Inject, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
-import { ILLMProvider, QuizPrompt, QuizResponse } from '../../domain/services/llm/llm.interface';
+import { SaveCategory } from '../../domain/entities/save.entity';
+import {
+  FlashcardPrompt,
+  FlashcardResponse,
+  ILLMProvider,
+  QuizPrompt,
+  QuizResponse,
+  SuggestResponse,
+} from '../../domain/services/llm/llm.interface';
 
 /**
- * LlmService — retry wrapper + JSON validation.
+ * LlmService - retry wrapper + response validation.
  * Application services always call this, never providers directly.
- * Handles 3 retry attempts and validates the quiz response shape.
  */
 @Injectable()
 export class LlmService {
@@ -25,23 +32,44 @@ export class LlmService {
         }
       }
     }
-    throw new ServiceUnavailableException('Quiz generation failed — invalid response');
+    throw new ServiceUnavailableException('Quiz generation failed - invalid response');
   }
 
   async suggestCategory(text: string): Promise<string> {
+    const result = await this.suggest(text, text, text);
+    return result.category;
+  }
+
+  async suggest(text: string, sentence: string, paragraph: string): Promise<SuggestResponse> {
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
-        return await this.provider.suggestCategory(text);
+        const result = await this.provider.suggest(text, sentence, paragraph);
+        if (this.isValidSuggest(result)) return result;
+        this.logger.warn(`Suggestion attempt ${attempt}: invalid response shape received`);
       } catch (err) {
-        this.logger.warn(
-          `Category suggestion attempt ${attempt} failed: ${(err as Error).message}`,
-        );
+        this.logger.warn(`Suggestion attempt ${attempt} failed: ${(err as Error).message}`);
         if (attempt === 3) {
-          throw new ServiceUnavailableException('Category suggestion failed after 3 attempts');
+          throw new ServiceUnavailableException('Suggestion failed after 3 attempts');
         }
       }
     }
-    return 'Vocabulary'; // fallback — never reached
+    throw new ServiceUnavailableException('Suggestion failed - invalid response');
+  }
+
+  async generateFlashcard(prompt: FlashcardPrompt): Promise<FlashcardResponse> {
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const result = await this.provider.generateFlashcard(prompt);
+        if (this.isValidFlashcard(result)) return result;
+        this.logger.warn(`Flashcard attempt ${attempt}: invalid response shape received`);
+      } catch (err) {
+        this.logger.warn(`Flashcard attempt ${attempt} failed: ${(err as Error).message}`);
+        if (attempt === 3) {
+          throw new ServiceUnavailableException('Flashcard generation failed after 3 attempts');
+        }
+      }
+    }
+    throw new ServiceUnavailableException('Flashcard generation failed - invalid response');
   }
 
   private isValidQuiz(data: any): data is QuizResponse {
@@ -52,5 +80,25 @@ export class LlmService {
       typeof data?.correct === 'string' &&
       typeof data?.explanation === 'string'
     );
+  }
+
+  private isValidSuggest(data: any): data is SuggestResponse {
+    return (
+      this.isSaveCategory(data?.category) &&
+      (typeof data?.suggest_correct_word === 'string' || data?.suggest_correct_word === null)
+    );
+  }
+
+  private isValidFlashcard(data: any): data is FlashcardResponse {
+    return (
+      (typeof data?.pronunciation === 'string' || data?.pronunciation === null) &&
+      typeof data?.meaning === 'string' &&
+      typeof data?.usage === 'string' &&
+      typeof data?.example === 'string'
+    );
+  }
+
+  private isSaveCategory(value: any): value is SaveCategory {
+    return ['Vocabulary', 'Phrase', 'Grammar', 'Idiom'].includes(value);
   }
 }
