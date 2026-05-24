@@ -1,0 +1,4 @@
+{
+  "apiBaseUrl": "https://1f5wx41kx7.execute-api.ap-southeast-1.amazonaws.com/prod",
+  "frontendUrl": "https://learnclipv1.vercel.app"
+}

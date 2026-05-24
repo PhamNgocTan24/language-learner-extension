@@ -6,6 +6,7 @@ node_modules/
 dist/
 lambda-package/
 coverage/
+output/extension/
 
 # Environment
 .env
