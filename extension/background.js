@@ -6,8 +6,11 @@
  * directly — no sendMessage timing issues.
  */
 
-const API_BASE = 'http://localhost:3000';
-const CALLBACK_ORIGIN = 'http://localhost:3001';
+importScripts('config.js');
+
+const CONFIG = globalThis.LEARNCLIP_CONFIG;
+const API_BASE = CONFIG.apiBaseUrl;
+const CALLBACK_ORIGIN = CONFIG.frontendUrl;
 
 // ── Watch OAuth callback tab for tokens ───────────────────────────────────────
 // This fires whenever ANY tab navigates, including the OAuth redirect.

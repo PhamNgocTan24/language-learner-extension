@@ -2,8 +2,9 @@
  * popup.js — controls the extension popup UI
  */
 
-const FRONTEND_URL = 'http://localhost:3001';
-const API_AUTH_URL = 'http://localhost:3000/auth/google';
+const CONFIG = globalThis.LEARNCLIP_CONFIG;
+const FRONTEND_URL = CONFIG.frontendUrl;
+const API_AUTH_URL = `${CONFIG.apiBaseUrl}/auth/google`;
 
 const viewLogout = document.getElementById('view-logout');
 const viewLogin = document.getElementById('view-login');

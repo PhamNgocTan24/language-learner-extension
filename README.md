@@ -130,6 +130,10 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 pnpm run start:dev          # start API in watch mode
 pnpm run build              # compile TypeScript
 
+# Chrome extension
+pnpm run extension:build:dev   # build unpacked dev extension into output/extension/development
+pnpm run extension:build:prod  # build unpacked prod extension into output/extension/production
+
 # Database
 pnpm run migration:generate -- src/infrastructure/database/migrations/MigrationName
 pnpm run migration:run
@@ -143,6 +147,31 @@ pnpm run test:cov           # coverage report
 # Lint
 pnpm run lint
 pnpm run lint:fix
+```
+
+### Chrome Extension Environments
+
+The extension is a static Manifest V3 bundle, so environment values are generated at build time.
+Public URLs live in `extension/env/*.json`; do not put secrets there because extension files are visible to users.
+
+```bash
+# Build local extension
+pnpm run extension:build:dev
+
+# Build production extension for Chrome Web Store / unpacked production testing
+pnpm run extension:build:prod
+```
+
+Load the generated folder in Chrome:
+
+```text
+chrome://extensions -> Developer mode -> Load unpacked -> output/extension/production
+```
+
+For one-off preview builds, override URLs without editing files:
+
+```bash
+EXTENSION_API_BASE_URL=https://api.example.com EXTENSION_FRONTEND_URL=https://app.example.com pnpm run extension:build
 ```
 
 ---
